@@ -1,6 +1,6 @@
-# 02 — Spec Kỹ thuật: Kiến trúc, Loss, KPI, 42 File Code
+# 02 — Spec Kỹ thuật: Kiến trúc, Loss, KPI, 41 File Code
 
-> **Mục đích:** Tất cả chi tiết kỹ thuật để Claude code đúng spec — kiến trúc model, loss function, KPI formulas, danh sách 42 file với mô tả từng cái.
+> **Mục đích:** Tất cả chi tiết kỹ thuật để Claude code đúng spec — kiến trúc model, loss function, KPI formulas, danh sách 41 file với mô tả từng cái.
 > **File song hành:** [01_KeHoach.md](01_KeHoach.md) (chiến lược + checklist) | [03_Research_Note.md](03_Research_Note.md) (nền lý thuyết)
 
 ---
@@ -250,7 +250,7 @@ copy_paste: 0.3       # Tốt cho seg
 | 4 | `ml2/u2net/__init__.py` | 5 | Export U2NET, U2NETp |
 | 5 | `ml2/u2net/model.py` | 350 | RSU + U2NET + U2NETp classes |
 | 6 | `ml2/u2net/loss.py` | 120 | Combo BCE+IoU+SSIM + EdgeLoss |
-| 7 | `ml2/u2net/dataset.py` | 180 | DocSegDataset cho SmartDoc/MIDV/Doc3D |
+| 7 | `ml2/u2net/dataset.py` | 180 | DocSegDataset cho SmartDoc/Doc3D |
 | 8 | `ml2/u2net/augmentation.py` | 100 | Albumentations basic + strong |
 | 9 | `ml2/u2net/train.py` | 280 | Training loop + MPS + TensorBoard |
 | 10 | `ml2/u2net/eval.py` | 200 | 4 metrics + per-dataset |
@@ -264,7 +264,7 @@ copy_paste: 0.3       # Tốt cho seg
 
 | # | File | Dòng | Vai trò |
 |---|------|------|---------|
-| 16 | `ml2/yolo_seg/prepare_dataset.py` | 200 | Convert SmartDoc XML + MIDV JSON → YOLO polygon |
+| 16 | `ml2/yolo_seg/prepare_dataset.py` | 200 | Convert SmartDoc XML → YOLO polygon |
 | 17 | `ml2/yolo_seg/train.py` | 180 | Wrapper Ultralytics + MPS |
 | 18 | `ml2/yolo_seg/eval.py` | 180 | mAP + custom mIoU + speed |
 | 19 | `ml2/yolo_seg/visualize.py` | 250 | ⭐ **YOLODocVisualizer (bbox + mask + corners + info)** |
@@ -288,32 +288,32 @@ copy_paste: 0.3       # Tốt cho seg
 |---|------|------|---------|
 | 28 | `ml2/benchmark/kpi_speed.py` | 180 | CPU + MPS + CoreML latency |
 | 29 | `ml2/benchmark/kpi_accuracy.py` | 200 | 4 metrics so sánh song song |
-| 30 | `ml2/benchmark/kpi_robustness.py` | 150 | Per-dataset (SmartDoc / MIDV / Doc3D) |
+| 30 | `ml2/benchmark/kpi_robustness.py` | 150 | Per-dataset (SmartDoc / Doc3D) |
 | 31 | `ml2/benchmark/kpi_e2e.py` | 180 | PSNR + SSIM + OCR-CER + total time |
 | 32 | `ml2/benchmark/aggregate_results.py` | 100 | Gộp + xuất CSV + figures |
 
-### 6.6 Scripts (7 file)
+### 6.6 Scripts (6 file)
 
 | # | File | Dòng | Vai trò |
 |---|------|------|---------|
-| 33 | `ml2/scripts/download_datasets.py` | 200 | Tải **SmartDoc + MIDV-500 + Doc3D subset** |
+| 33 | `ml2/scripts/download_datasets.py` | 200 | Tải **SmartDoc + Doc3D + DocAligner optional** |
 | 34 | `ml2/scripts/prepare_smartdoc.py` | 150 | Extract video frames + parse XML 4-góc |
-| 35 | `ml2/scripts/prepare_midv.py` | 150 | Parse MIDV polygon → mask + sample frames |
-| 36 | `ml2/scripts/prepare_doc3d.py` | 120 | Extract foreground mask + random subset 5K |
-| 37 | `ml2/scripts/build_dummy_data.py` | 150 | ⭐ **Sinh 100 ảnh dummy để test code chạy ngay** |
-| 38 | `ml2/scripts/check_environment.py` | 100 | Verify M4 Max MPS + deps |
-| 39 | `ml2/scripts/caffeinate_train.sh` | 30 | Wrapper train kèm caffeinate -i |
+| 35 | `ml2/scripts/prepare_doc3d.py` | 120 | Extract foreground mask + random subset 5K |
+| 35b | `ml2/scripts/prepare_docaligner.py` | 100 | ⚠️ Optional — convert DocAlign12K → mask format |
+| 36 | `ml2/scripts/build_dummy_data.py` | 150 | ⭐ **Sinh 100 ảnh dummy để test code chạy ngay** |
+| 37 | `ml2/scripts/check_environment.py` | 100 | Verify M4 Max MPS + deps |
+| 38 | `ml2/scripts/caffeinate_train.sh` | 30 | Wrapper train kèm caffeinate -i |
 
 ### 6.7 Notebooks (4 file)
 
 | # | File | Cells | Vai trò |
 |---|------|-------|---------|
-| 40 | `ml2/notebooks/01_u2net_demo.ipynb` | ~20 | Load model, forward, train 1 epoch dummy, viz |
-| 41 | `ml2/notebooks/02_yolo_demo.ipynb` | ~15 | Predict + viz trên dummy data |
-| 42 | `ml2/notebooks/03_integration_demo.ipynb` | ~15 | Run cả 2 pipeline |
-| 43 | `ml2/notebooks/04_benchmark_demo.ipynb` | ~20 | Mini-benchmark + biểu đồ |
+| 39 | `ml2/notebooks/01_u2net_demo.ipynb` | ~20 | Load model, forward, train 1 epoch dummy, viz |
+| 40 | `ml2/notebooks/02_yolo_demo.ipynb` | ~15 | Predict + viz trên dummy data |
+| 41 | `ml2/notebooks/03_integration_demo.ipynb` | ~15 | Run cả 2 pipeline |
+| 42 | `ml2/notebooks/04_benchmark_demo.ipynb` | ~20 | Mini-benchmark + biểu đồ |
 
-**Tổng:** 42 file (3 đã có, 39 chưa build) + 4 notebook = ~4500 dòng code.
+**Tổng:** 41 file (2 đã có, 39 chưa build) + 4 notebook = ~4,400 dòng code.
 
 ---
 
@@ -323,7 +323,7 @@ copy_paste: 0.3       # Tốt cho seg
 Bước 1: Foundation       → check_environment + build_dummy_data + README
 Bước 2: U²-Net core     → model + loss + augmentation + dataset
 Bước 3: U²-Net training → train + eval + infer + visualize + 3 configs
-Bước 4: Dataset scripts → download + 3 prepare scripts
+Bước 4: Dataset scripts → download + 2 prepare scripts
 Bước 5: YOLO module     → prepare + visualize (độc lập) + train + eval + demo + tta + export
 Bước 6: Integration     → wrappers + 2 pipelines + test
 Bước 7: Benchmark       → 4 KPI + aggregate
@@ -352,7 +352,7 @@ Bước 9: Test E2E        → chạy hết trên dummy data, fix bugs
 ## 9. Definition of Done
 
 **Sau session Claude build (~6h):**
-- [ ] 42 file tồn tại
+- [ ] 41 file tồn tại
 - [ ] `python ml2/scripts/check_environment.py` pass
 - [ ] `python ml2/scripts/build_dummy_data.py --n 100` sinh 100 ảnh dummy
 - [ ] `python ml2/u2net/train.py --config mps_mini --dummy --epochs 1` không lỗi

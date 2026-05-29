@@ -1,0 +1,47 @@
+# Optional - Full U2-Net 44M params cho CUDA users
+name: u2net_full
+
+model:
+  arch: U2NET
+  in_channels: 3
+  out_channels: 1
+
+data:
+  roots:
+    - ml2/data/smartdoc
+    - ml2/data/doc3d
+  image_size: 320
+  augmentation: strong
+  num_workers: 8
+
+train:
+  device: cuda
+  epochs: 200
+  batch_size: 8
+  optimizer: adam
+  lr: 0.0005
+  weight_decay: 0.0
+  betas: [0.9, 0.999]
+  scheduler: cosine
+  warmup_epochs: 5
+  grad_clip: 1.0
+  amp: true
+
+loss:
+  w_bce: 1.0
+  w_iou: 1.0
+  w_ssim: 1.0
+  w_edge: 0.0
+
+checkpoint:
+  out_dir: ml2/checkpoints
+  save_every: 5
+  save_best: true
+  resume: null
+
+log:
+  tb_dir: ml2/runs/u2net_full
+  print_every: 50
+
+pretrain:
+  enabled: false

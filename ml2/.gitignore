@@ -1,0 +1,45 @@
+# Data
+data/smartdoc/*
+data/doc3d/*
+data/docaligner/*
+!data/*/.gitkeep
+!data/dummy/
+
+# Checkpoints
+checkpoints/*.pth
+checkpoints/*.pt
+checkpoints/*.onnx
+checkpoints/*.mlpackage
+
+# Results
+results/*.csv
+results/*.png
+results/*.jpg
+results/runs/
+
+# TensorBoard
+runs/
+tb_logs/
+
+# Cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Env
+venv_ml2/
+.env
+
+# Misc
+*.log
+*.swp

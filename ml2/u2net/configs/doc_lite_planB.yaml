@@ -1,0 +1,51 @@
+# Plan B chính - Train U2-Netp lite trên SmartDoc + Doc3D (M4 Max MPS)
+name: u2netp_planB
+
+model:
+  arch: U2NETp
+  in_channels: 3
+  out_channels: 1
+
+data:
+  roots:
+    - ml2/data/smartdoc       # 24,887 ảnh (17K train / 5K val / 2.5K test)
+    - ml2/data/kaggle_real    # 620 ảnh real-photo bổ sung
+  image_size: 320
+  augmentation: strong  # basic | strong
+  num_workers: 0  # Fix: MPS + fork multiprocessing hangs on macOS
+
+train:
+  device: mps
+  epochs: 80
+  batch_size: 16
+  optimizer: adam
+  lr: 0.001
+  weight_decay: 0.0
+  betas: [0.9, 0.999]
+  scheduler: cosine  # cosine | step | none
+  warmup_epochs: 5
+  grad_clip: 1.0
+  amp: false  # tắt - MPS AMP buggy
+
+loss:
+  w_bce: 1.0
+  w_iou: 1.0
+  w_ssim: 1.0
+  w_edge: 0.0
+
+checkpoint:
+  out_dir: ml2/checkpoints
+  save_every: 5
+  save_best: true
+  resume: null
+
+log:
+  tb_dir: ml2/runs/u2netp_planB
+  print_every: 50
+
+# Optional DocAligner pretrain stage
+pretrain:
+  enabled: false
+  roots: [ml2/data/docaligner]
+  epochs: 30
+  lr: 0.001

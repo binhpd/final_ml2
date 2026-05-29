@@ -13,7 +13,7 @@ docs_ml2/
 ├── 📍 README.md             ← Bạn đang đọc (master index, 1 trang)
 │
 ├── 📋 01_KeHoach.md         ← Plan B + Checklist (gộp Plan + Decisions + Tick)
-├── 🔬 02_Spec_KyThuat.md    ← Kiến trúc + Loss + KPI + 42 file code spec
+├── 🔬 02_Spec_KyThuat.md    ← Kiến trúc + Loss + KPI + 41 file code spec
 ├── 📖 03_Research_Note.md   ← Tóm tắt 9 file research nền tảng
 │
 └── _archive/                ← Tài liệu cũ (giữ làm reference)
@@ -62,7 +62,7 @@ docs_ml2/
 | **U²-Netp lite** (1.1M, 4.7MB) | Train from scratch 1 stage | Tách nền — thay `rembg` |
 | **YOLOv11n-seg** (2.9M, 6MB) | Fine-tune COCO | Phân vùng + bbox + viz |
 
-**Datasets:** SmartDoc ICDAR 2015 (4K) + MIDV-500 (3K) + Doc3D (5K) = **12,000 ảnh online**
+**Datasets:** SmartDoc ICDAR 2015 (7K) + Doc3D (5K) = **12,000 ảnh online**
 
 **Timeline:** Build code 6h (Claude) → Train 5-7 ngày (M4 Max) → Benchmark 1 ngày
 
@@ -89,7 +89,7 @@ docs_ml2/   ← 4 file plan đã sẵn sàng review
 ml2/        ← CHƯA tạo (sẽ tạo khi user nói "OK build")
 ```
 
-→ Khi bạn tick xong checklist trong [01_KeHoach.md](01_KeHoach.md) và nói "Bắt đầu build", Claude sẽ tạo `ml2/` với 42 file Python + 4 notebook (~4,500 dòng) theo spec trong [02_Spec_KyThuat.md](02_Spec_KyThuat.md).
+→ Khi bạn tick xong checklist trong [01_KeHoach.md](01_KeHoach.md) và nói "Bắt đầu build", Claude sẽ tạo `ml2/` với 41 file Python + 4 notebook (~4,400 dòng) theo spec trong [02_Spec_KyThuat.md](02_Spec_KyThuat.md).
 
 ---
 

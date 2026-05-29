@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Virtual Environments
+venv_ml2/
+venv/
+.venv/
+env/
+.env
+
+# Model weights & large downloaded checkpoints
+yolo11n-seg.pt
+ml2/checkpoints/*.pth
+ml2/checkpoints/*.pt
+ml2/checkpoints/*.onnx
+ml2/checkpoints/*.mlpackage
+
+# Heavy datasets and runs
+runs/
+ml2/data/
+ml2/runs/
+ml2/tb_logs/
+
+# Results (CSV & PNG/JPG visualizations)
+ml2/results/*.csv
+ml2/results/*.png
+ml2/results/*.jpg
+ml2/results/runs/
+!ml2/results/TEST_REPORT.md
+!ml2/results/U2NET_SUMMARY.md
+
+# Log files
+*.log
