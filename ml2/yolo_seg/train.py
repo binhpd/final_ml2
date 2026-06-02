@@ -22,6 +22,8 @@ def main():
     ap.add_argument("--name", default="doc_planB")
     ap.add_argument("--from_scratch", action="store_true")
     ap.add_argument("--dummy", action="store_true")
+    ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--cache", action="store_true")
     args = ap.parse_args()
 
     from ultralytics import YOLO
@@ -30,7 +32,7 @@ def main():
         args.data = "ml2/data/dummy/dummy.yaml"
         Path(args.data).parent.mkdir(parents=True, exist_ok=True)
         Path(args.data).write_text(
-            "path: ml2/data/dummy\ntrain: images\nval: images\nnc: 1\nnames:\n  0: document\n"
+            "path: ml2/data/dummy\ntrain: images\nval: images\nc: 1\nnames:\n  0: document\n"
         )
         args.epochs = 1
         args.imgsz = 256
@@ -63,7 +65,8 @@ def main():
         cls=0.5,
         dfl=1.5,
         # Hardware
-        workers=4,
+        workers=args.workers,
+        cache=args.cache,
         pretrained=not args.from_scratch,
     )
     # Save best weight to checkpoints/

@@ -16,6 +16,7 @@ results/*.csv
 results/*.png
 results/*.jpg
 results/runs/
+results/pipeline_e2e/
 
 # TensorBoard
 runs/

@@ -93,10 +93,13 @@ python3 "Pipeline With ML/main.py" <thư_mục_test> <số_thứ_tự> --dewarp-
 
 ---
 
-## 3. Tài liệu Báo cáo môn học
+## 3. Tài liệu Báo cáo môn học (Học sâu & Tích hợp)
 
-Các tài liệu lý thuyết, sơ đồ khối và đánh giá ưu/nhược điểm được lưu trữ trong thư mục `docs/`:
+Các tài liệu nghiên cứu, spec kỹ thuật và hướng dẫn huấn luyện được lưu trữ trong thư mục [docs_ml2/](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/):
 
-- [Mô tả Bài toán (Lý thuyết Image Processing cơ bản)](docs/BaiToan.md)
-- [Đánh giá Giải pháp (Phân tích các ca khó & Case Limit)](docs/DanhGiaGiaiPhap.md)
-- [Workflow Chi tiết (Từng bước của Pipeline có ML)](docs/PIPELINE_WORKFLOW.md)
+- [README.md - Master Index](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/README.md)
+- [01_KeHoach.md - Kế hoạch triển khai & Checklist](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/01_KeHoach.md)
+- [02_Spec_KyThuat.md - Kiến trúc mô hình, Loss & Spec code](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/02_Spec_KyThuat.md)
+- [03_Research_Note.md - Tóm tắt lý thuyết nền tảng](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/03_Research_Note.md)
+- [04_Other_Models_Research.md - Nghiên cứu các mô hình SOTA thay thế](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/04_Other_Models_Research.md)
+- [05_HuongDan_Build_Train_YOLO_U2Net.md - Hướng dẫn chi tiết cách build, train & KPIs đánh giá](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/05_HuongDan_Build_Train_YOLO_U2Net.md)

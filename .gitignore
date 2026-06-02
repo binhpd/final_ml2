@@ -43,6 +43,7 @@ ml2/results/*.csv
 ml2/results/*.png
 ml2/results/*.jpg
 ml2/results/runs/
+ml2/results/pipeline_e2e/
 !ml2/results/TEST_REPORT.md
 !ml2/results/U2NET_SUMMARY.md
 

@@ -13,7 +13,7 @@ import torch
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from ml2.u2net.model import U2NETp
+from ml2.u2net.model import U2NET, U2NETp
 
 
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
@@ -52,8 +52,8 @@ def infer_single(model: torch.nn.Module, img_bgr: np.ndarray, device: torch.devi
     return mask
 
 
-def load_model(ckpt: str, device: torch.device) -> torch.nn.Module:
-    model = U2NETp().to(device)
+def load_model(ckpt: str, device: torch.device, is_lite: bool = True) -> torch.nn.Module:
+    model = U2NETp().to(device) if is_lite else U2NET().to(device)
     model.load_state_dict(torch.load(ckpt, map_location=device))
     model.eval()
     return model

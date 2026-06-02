@@ -19,10 +19,10 @@ from ml2.u2net.infer import infer_single, load_model
 class U2NetDetector:
     """Wrapper drop-in cho rembg trong Step 1 pipeline."""
 
-    def __init__(self, ckpt: str = "ml2/checkpoints/u2netp_doc.pth", device: str = "mps", size: int = 320):
+    def __init__(self, ckpt: str = "ml2/checkpoints/u2netp_doc.pth", device: str = "mps", size: int = 320, is_lite: bool = True):
         self.device = torch.device(device if (device != "mps" or torch.backends.mps.is_available()) else "cpu")
         self.size = size
-        self.model = load_model(ckpt, self.device)
+        self.model = load_model(ckpt, self.device, is_lite=is_lite)
 
     def detect(self, img: np.ndarray) -> np.ndarray:
         """Trả về binary mask (H, W) uint8 0/255."""
