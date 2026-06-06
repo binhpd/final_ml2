@@ -1,105 +1,67 @@
-# ml2/ — U²-Net + YOLO-Seg Document Segmentation
+# ml2/ — Phân đoạn Tài liệu & Loại bỏ Gáy Sách (U²-Net + YOLO-Seg)
 
-> Đồ án ML2 cuối kỳ — Nhóm 6 | Mac Studio M4 Max 48GB | Plan B
+> Đồ án ML2 cuối kỳ — Nhóm 6 | Mac Studio M4 Max 48GB
 
-## Cấu trúc
+## 🎯 Chủ đề Đồ Án
+Xây dựng mô hình AI để phân đoạn và cắt trang tài liệu từ ảnh chụp điện thoại. Dự án được chia làm 2 giai đoạn:
+- **Giai đoạn 1 (Cơ bản):** Xây dựng và so sánh hiệu năng giữa hai họ mạng U²-Net (tách nền pixel-level) và YOLOv11-seg (instance segmentation) trong bài toán cắt trang giấy đơn cơ bản. Đánh giá về cách train, chất lượng đầu ra và các KPI.
+- **Giai đoạn 2 (Nâng cao):** Giải quyết vấn đề thực tế khi chụp tài liệu thường dính gáy sách. Mô hình YOLO được huấn luyện (tuning) nâng cao với dữ liệu gán nhãn chi tiết để phân biệt trang trái/phải, từ đó tự động loại bỏ phần gáy sách dư thừa và cắt chính xác nội dung trang.
+
+## 🗂️ Cấu trúc
 
 ```
 ml2/
-├── u2net/                  # U²-Netp lite (1.1M, 4.7MB)
-│   ├── model.py            # RSU + U2NETp
-│   ├── loss.py             # BCE + IoU + SSIM combo
-│   ├── dataset.py          # SmartDoc / Doc3D / DocAligner loader
-│   ├── augmentation.py     # Albumentations basic + strong
-│   ├── train.py
-│   ├── eval.py
-│   ├── infer.py
-│   ├── visualize.py
-│   └── configs/
-│       ├── doc_lite_planB.yaml      # Config chính
-│       ├── doc_full_optional.yaml   # Cho CUDA users
-│       └── mps_mini.yaml            # Test nhanh MPS
-│
-├── yolo_seg/               # YOLOv11n-seg (2.9M, 6MB)
-│   ├── prepare_dataset.py
-│   ├── train.py
-│   ├── eval.py
-│   ├── visualize.py
-│   ├── demo_viz.py
-│   ├── infer_tta.py
-│   └── export_all.py
-│
-├── pipeline_integration/   # Drop-in vào pipeline cũ
-│   ├── u2net_wrapper.py
-│   ├── yolo_wrapper.py
-│   ├── pipeline_u2net.py
-│   ├── pipeline_yolo.py
-│   └── test_integration.py
-│
-├── benchmark/              # 4 chiều KPI
-│   ├── kpi_speed.py
-│   ├── kpi_accuracy.py
-│   ├── kpi_robustness.py
-│   ├── kpi_e2e.py
-│   └── aggregate_results.py
-│
-├── scripts/                # Hỗ trợ
-│   ├── download_datasets.py
-│   ├── prepare_smartdoc.py
-│   ├── prepare_doc3d.py
-│   ├── prepare_docaligner.py
-│   ├── build_dummy_data.py
-│   ├── check_environment.py
-│   └── caffeinate_train.sh
-│
-├── notebooks/              # 4 demo
-├── checkpoints/            # .pth + .pt
-├── data/                   # Datasets (gitignored)
-├── results/                # KPI CSV + figures
+├── u2net/                  # U²-Netp lite (Giai đoạn 1)
+├── yolo_seg/               # YOLOv11n-seg (Giai đoạn 1 & 2 - Spine Exclusion)
+├── pipeline_integration/   # Drop-in wrappers
+├── benchmark/              # Đánh giá KPI
+├── scripts/                # Hỗ trợ (Tải & Chuẩn bị data)
+├── notebooks/              # Demos
+├── checkpoints/            # Chứa các model đang train
+├── exported_models/        # Các model đã train & tuning (đã export)
 └── requirements.txt
 ```
 
-## Quick start
+## 🚀 Quick Start (Lệnh Build & Test)
 
 ```bash
-# 1. Setup
+# 1. Setup & Build Environment
 python -m venv venv_ml2
 source venv_ml2/bin/activate
 pip install -r ml2/requirements.txt
 
-# 2. Verify
+# 2. Verify Environment
 python ml2/scripts/check_environment.py
 
-# 3. Test code với dummy data
-python ml2/scripts/build_dummy_data.py --n 100
-python ml2/u2net/train.py --config ml2/u2net/configs/mps_mini.yaml --dummy --epochs 1
+# 3. Chạy Thử (Test) Tính năng Cắt Gáy Sách (Spine Exclusion)
+# Mặc định sử dụng Cutout và Gaussian Smoothing để làm mờ viền cắt
+python ml2/yolo_seg/test_crop.py \
+    --weights exported_models/yolo11n_seg_spine_exclusion_best.pt \
+    --source path/to/your/test_images \
+    --cutout \
+    --smooth-kernel 15
 
-# 4. Tải dataset thật (chạy đêm)
-python ml2/scripts/download_datasets.py --smartdoc --doc3d
-python ml2/scripts/prepare_smartdoc.py
-python ml2/scripts/prepare_doc3d.py
+# 4. Tải và Xử lý dataset thật (Giai đoạn 2: Tách nhãn trái/phải để train)
+python ml2/yolo_seg/split_and_process_dataset.py \
+    --input_dir datasets/your_raw_dataset \
+    --output_dir datasets/spine_dataset \
+    --split_ratio 0.8
 
-# 5. Train (caffeinate chống sleep)
-caffeinate -i python ml2/u2net/train.py --config ml2/u2net/configs/doc_lite_planB.yaml
-caffeinate -i python ml2/yolo_seg/train.py --epochs 150 --device mps
-
-# 6. Eval + Benchmark
-python ml2/u2net/eval.py --ckpt ml2/checkpoints/u2netp_doc.pth
-python ml2/yolo_seg/eval.py --weights ml2/checkpoints/yolo11n_seg_doc.pt
-python ml2/benchmark/aggregate_results.py
+# 5. Huấn luyện (Train/Tuning) YOLOv11-seg
+yolo task=segment mode=train data=datasets/spine_dataset/data.yaml model=yolo11n-seg.pt epochs=150 device=mps
 ```
 
-## KPI mục tiêu
+## 📦 Exported Models
+Các mô hình đã được train và tuning hoàn chỉnh được lưu tại thư mục `exported_models/` ở thư mục gốc:
+- `u2netp_doc_final.pth`: Mô hình U²-Net lite (Giai đoạn 1).
+- `yolo11n_seg_doc.pt`: Mô hình YOLO-Seg cơ bản (Giai đoạn 1).
+- `yolo11n_seg_spine_exclusion_best.pt`: Mô hình YOLO-Seg đã tuning cho bài toán cắt gáy sách (Giai đoạn 2).
 
-| Metric | rembg baseline | U²-Netp lite | YOLOv11n-seg |
-|--------|----------------|--------------|--------------|
-| mIoU | 0.78 | ≥ 0.83 | ≥ 0.81 |
-| F1 | 0.82 | ≥ 0.87 | ≥ 0.85 |
-| FPS (MPS) | 8 | ≥ 20 | ≥ 35 |
-| Size | 176MB | 4.7MB | 6MB |
-
-## Pipeline
-
-Step 1 (Detection) ← **Code mới ở đây** → Step 2 (Warp) → Step 3 (Enhance)
-
-→ Xem `docs_ml2/01_KeHoach.md`, `02_Spec_KyThuat.md`, `03_Research_Note.md`.
+## 📊 Tham khảo Tài liệu (docs_ml2)
+Chi tiết về toàn bộ quá trình nghiên cứu, chuẩn bị dữ liệu, đào tạo và đánh giá KPI, vui lòng xem tại thư mục `docs_ml2/`:
+- `docs_ml2/01_Problem_Statement.md`: Phát biểu bài toán 2 giai đoạn.
+- `docs_ml2/02_Research_Review.md`: Phân tích U2Net vs YOLO.
+- `docs_ml2/03_Project_Plan.md`: Kế hoạch và xử lý rủi ro.
+- `docs_ml2/04_Technical_Spec_and_KPI.md`: Thông số kỹ thuật YOLO tuning.
+- `docs_ml2/05_Training_Guide.md`: Hướng dẫn chi tiết train.
+- `docs_ml2/06_Evaluation_Results.md`: Đánh giá mIoU, viền răng cưa.

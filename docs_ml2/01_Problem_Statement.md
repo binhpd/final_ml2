@@ -1,181 +1,76 @@
 # PHÁT BIỂU BÀI TOÁN & MỤC TIÊU
 
-## Bối cảnh & Mục tiêu
- & Mục tiêu
+## 1. Bối cảnh & Bài Toán
 
 ### 1.1 Bài toán
-Phát hiện và phân đoạn chính xác vùng tài liệu văn bản (Document Segmentation) ra khỏi các bối cảnh nền phức tạp bằng mô hình học sâu.
+Bài toán đặt ra là phát hiện, phân đoạn và cắt chính xác vùng tài liệu văn bản (Document Segmentation) ra khỏi bối cảnh nền phức tạp bằng mô hình học sâu.
 
-### 1.2 Hai mô hình cần train
+### 1.2 Sự phát triển của dự án (2 Giai đoạn)
 
-| Task | Model | Vai trò | Variant Plan B |
-|------|-------|---------|----------------|
-| **A** | **U²-Netp lite** (1.1M params, 4.7MB) | Tách nền tài liệu (pixel-level segmentation) | Train from scratch 1 stage |
-| **B** | **YOLOv11n-seg** (2.9M params, 6MB) | Phân đoạn tài liệu (instance segmentation + bbox) | Fine-tune COCO |
+Dự án ban đầu được xây dựng để giải quyết bài toán cơ bản, sau đó nâng cấp lên bài toán nâng cao để giải quyết triệt để nhu cầu thực tế:
 
----
+**Giai đoạn 1: Bài toán cắt trang giấy đơn cơ bản**
+- **Mục tiêu:** Xây dựng và so sánh hiệu năng của 2 kiến trúc (U²-Netp và YOLOv11-seg) trong việc tách tài liệu.
+- **Thực tế:** Cả 2 mô hình đều cắt tốt trang giấy rời. Tuy nhiên, khi người dùng chụp ảnh sách hoặc tạp chí mở (có 2 trang), mô hình thường nhận diện lẹm vào phần gáy sách (spine) hoặc gộp cả 2 trang thành 1, dẫn đến nội dung bị cong vênh, thừa viền đen, sai lệch khung hình.
 
-## 2. Datasets (Tập trung tài liệu văn bản giấy trắng)
-
-### 2.1 Bảng dataset & Nguồn tải thực tế
-
-Để tập trung tối đa vào bài toán scan tài liệu văn bản giấy trắng (A4, hóa đơn, tài liệu in) và đảm bảo chất lượng mô hình cao nhất, dự án tập trung khai thác 3 bộ dữ liệu lớn sau:
-
-| Dataset | Nguồn dữ liệu | Số lượng ảnh | Vai trò trong dự án | Ghi chú nhãn |
-|---------|---------------|:---:|---------------------|--------------|
-| **SmartDoc2-Images** | Kaggle `carlosaranda/smartdoc2images` | **24,887 ảnh** | Tập dữ liệu huấn luyện & đánh giá chính (A4 trên 5 nền phức tạp) | Polygon 4 góc chính xác |
-| **kaggle_real** | Kaggle `mdarobinislam/document-image-segmentation-yolo-masks` | **620 ảnh** | Tập dữ liệu ảnh điện thoại thực tế (Shadow, Glare, Occlusion) | Mask nhị phân chi tiết |
-| **Doc3D** | HuggingFace `StonyBroĐạt yêu cầu-CVLab/doc3D-dataset` | **90,372 ảnh** | **Độc lập làm Out-of-Distribution (OOD) test** (giấy nhăn/cong/gập) | Foreground mask + UV |
-| **TỔNG CỘNG** | | **115,879 ảnh** | Hỗ trợ huấn luyện sâu & kiểm thử độ bền bỉ | |
-
-*Lợi ích:* Sử dụng bộ dữ liệu gốc lớn gấp đôi so với kế hoạch ban đầu giúp mô hình hội tụ tốt hơn, tăng khả năng tổng quát hóa trên ảnh thực tế và kiểm thử độ bền (OOD) cực kỳ khắt khe.
-
-### 2.2 Strategy split thực tế (Tránh leakage)
-
-Do SmartDoc2-Images và kaggle_real là hai nguồn ảnh chính cho bài toán tài liệu phẳng và tài liệu thực tế chụp bằng điện thoại, chúng được phân chia đồng nhất như sau:
-
-| Dataset nguồn | Train | Val | Test | Cách split |
-|---------------|:---:|:---:|:---:|------------|
-| **SmartDoc + kaggle_real** | 17,918 | 5,039 | 2,550 | Chia ngẫu nhiên theo tỷ lệ 70/20/10 |
-| **Doc3D (OOD Test)** | — | — | 4,520 | Chọn ngẫu nhiên subset làm bài test OOD độ bền bỉ |
-
-### 2.3 5 Scenarios khó cần đảm bảo cover được
-
-Khi đánh giá robustness, kiểm tra model trên 5 nhóm sau (SmartDoc và Doc3D đã bao phủ đầy đủ):
-
-1. **Occlusion** — tay người cầm/che góc giấy → SmartDoc có nhiều frames có tay người giữ tài liệu
-2. **Complex backgrounds** — nền trùng màu (giấy trắng trên thảm trắng, bàn kính bóng) → Trọng tâm của SmartDoc
-3. **Lighting & shadows** — bóng đổ điện thoại, thiếu sáng, lóa sáng chéo → SmartDoc có các góc quay nghiêng gây bóng đổ
-4. **Physical deformations** — tài liệu bị nhăn, gập, cong góc → **Doc3D (chuyên sâu mô phỏng 3D)**
-5. **Varying shapes & margins** — tỷ lệ viền tài liệu thay đổi → SmartDoc (A4 chuẩn) và Doc3D (đa dạng khổ giấy)
+**Giai đoạn 2: Nâng cao - Cắt chính xác trang giấy & Loại bỏ gáy sách (Trọng tâm hiện tại)**
+- **Mục tiêu:** Nâng cấp giải pháp phân đoạn, giúp hệ thống không chỉ nhận diện được trang giấy mà còn **phân biệt được trang trái/phải**, từ đó **loại bỏ hoàn toàn phần gáy sách dư thừa**.
+- **Giải pháp:** 
+  - Gán nhãn lại tập dữ liệu thành các định dạng đa lớp (`left_page`, `right_page`).
+  - Lựa chọn **YOLOv11-seg** làm mô hình chính (do hỗ trợ đa lớp tốt hơn U2Net).
+  - Tích hợp kỹ thuật hậu xử lý (Post-processing) gồm: Cutout (xuất mask pixel-level trong suốt) và Gaussian Blur (làm mịn đường bao răng cưa).
 
 ---
 
-## 3. Timeline & Tiến độ Thực tế (M4 Max 48GB)
+## 2. Chiến lược Dữ liệu (Dataset Strategy)
 
-| Giai đoạn | Công việc Thực tế | Trạng thái / Kết quả đạt được |
-|---|---|---|
-| **Setup & Skeleton** | Thiết lập môi trường Python 3.12, venv, cài đặt các thư viện và tạo các file code hoàn chỉnh | **Đã hoàn thành 100%** (6 giờ) |
-| **Chuẩn bị Data** | Tải và xử lý bộ dataset thực tế (SmartDoc2-Images và kaggle_real), chuẩn bị OOD dataset Doc3D | **Đã hoàn thành 100%** (4 giờ) |
-| **Huấn luyện U²-Netp** | Huấn luyện mô hình U²-Netp lite (tối ưu xuống 80 epoch do hội tụ sớm) trên Apple Silicon MPS | **Đã hoàn thành 100%** (13 giờ 25 phút)<br>• Best Epoch: 60 (val IoU 0.9894)<br>• Output: `u2netp_doc_final.pth` |
-| **Huấn luyện YOLOv11n-seg** | Huấn luyện mô hình YOLOv11n-seg (150 epoch, `--batch 32 --imgsz 640` trên MPS) | **Đã hoàn thành 100%**<br>• Hội tụ tốt với mAP50-95 xuất sắc<br>• Output: `yolo11n-seg_doc.pt` |
-| **Đánh giá & Benchmark** | Chạy đánh giá (mIoU, Dice, MAE, Boundary F1, Speed) trên Test Set (N=2,550) và OOD Test Set (N=4,520) | **Đã hoàn thành 100%**<br>• Cả U²-Netp và YOLO đều vượt mọi KPI mục tiêu (xem Bảng vàng) |
-| **Xuất báo cáo kiểm thử** | Xuất báo cáo đánh giá chất lượng độc lập của mô hình và lưu kết quả | **Đã hoàn thành 100%**<br>• Đã tổng hợp đầy đủ số liệu tại Bảng vàng và `yolo_eval.csv` |
+Để mô hình có thể phân biệt và cắt bỏ gáy sách, chúng tôi đã phải xây dựng một chiến lược dữ liệu cực kỳ bài bản từ khâu thu thập, phân tích đặc trưng đến tái cấu trúc nhãn.
 
----
+### 2.1 Đặc trưng các bộ dữ liệu được sử dụng
+Nhóm không chỉ sử dụng một tập dữ liệu duy nhất mà kết hợp nhiều nguồn để đảm bảo tính tổng quát (Generalization):
+1. **SmartDoc2-Images (24,887 ảnh):** 
+   - *Mô tả:* Tập dữ liệu cốt lõi cung cấp bối cảnh thực tế rất đa dạng (văn bản A4, hóa đơn, tài liệu in). 
+   - *Đặc điểm kỹ thuật:* Chứa nhiều góc chụp nghiêng (Perspective distortion) và các điều kiện ánh sáng trong phòng (bóng đèn neon, ánh sáng cửa sổ).
+2. **kaggle_real (620 ảnh):** 
+   - *Mô tả:* Tập ảnh thu thập trực tiếp từ camera điện thoại thông thường. 
+   - *Đặc điểm kỹ thuật:* Chứa các nhiễu thực tế cực kỳ khó nhằn như chói sáng (glare), bóng đổ tay người chụp (shadows), nhiễu noise do chụp thiếu sáng.
+3. **Doc3D (90,372 ảnh - OOD Test):** 
+   - *Mô tả:* Tập dữ liệu được sinh bằng đồ họa máy tính (CGI).
+   - *Đặc điểm kỹ thuật:* Mô phỏng chính xác sự biến dạng không gian vật lý 3D của tờ giấy: giấy bị nhăn nhúm, gấp nếp, cuộn tròn. Dùng để kiểm thử giới hạn (Out-Of-Distribution) của mô hình.
 
-## 4. KPI Mục tiêu & Kết quả Thực tế
+### 2.2 Quy trình Tái cấu trúc Nhãn (Relabeling Algorithm)
+Trong dữ liệu gốc, mọi tờ giấy (dù là trang trái hay trang phải) đều được gán chung một nhãn là "document". Nếu đưa dữ liệu này vào huấn luyện, mô hình sẽ không hiểu được khái niệm "gáy sách ở giữa". 
 
-| Metric | rembg (baseline) | Target U²-Netp | Kết quả U²-Netp (Thực tế) | Target YOLO-Seg | Kết quả YOLO-Seg (Thực tế) | Đánh giá |
-|:---|:---:|:---:|:---:|:---:|:---:|:---|
-| **mIoU** | ~0.78 | $\ge 0.83$ | **0.9902** | $\ge 0.81$ | **0.9401** | Vượt xa mong đợi |
-| **F1 / Dice** | ~0.82 | $\ge 0.87$ | **0.9951** | $\ge 0.85$ | **0.9691** | Cực kỳ xuất sắc |
-| **Boundary F1** | ~0.65 | $\ge 0.76$ | **0.9069** | $\ge 0.72$ | **0.8850** | Biên tài liệu siêu sắc nét |
-| **MAE** | — | $< 0.05$ | **0.0010** | $< 0.05$ | **0.0045** | Sai số pixel siêu thấp |
-| **FPS (MPS)** | ~8 | $\ge 20$ | **73.0** | $\ge 35$ | **117.2** | Realtime siêu mượt trên Mac |
-| **Model Size** | 176 MB | $\le 4.7$ MB | **4.77 MB** | $\le 6.0$ MB | **5.98 MB** | Rất nhẹ cho mobile (ONNX 1MB) |
+Nhóm đã tự phát triển script `split_and_process_dataset.py` để tự động hóa việc chia tách nhãn với thuật toán như sau:
+1. **Phân tích Tọa độ (Polygon Parsing):** Đọc tọa độ 4 góc của bounding box/polygon từ file nhãn gốc.
+2. **Tính toán Trọng tâm (Centroid Calculation):** Thuật toán tính điểm trung tâm của mỗi tờ giấy.
+3. **Xác định Gáy sách ảo (Virtual Spine Axis):** Nếu trong một ảnh phát hiện 2 tờ giấy, thuật toán sẽ vẽ một đường trục dọc (trục y) nằm ở giữa 2 trọng tâm đó (chính là gáy sách).
+4. **Phân loại (Classification):** 
+   - Tờ giấy có trọng tâm nằm bên trái trục gáy sách ảo được đổi tên nhãn thành `left_page`.
+   - Tờ giấy có trọng tâm nằm bên phải được đổi tên thành `right_page`.
 
-→ **Cải thiện kỳ vọng:** mIoU +5-7%, FPS 3-5×, model size giảm 30-40×.
+**Ý nghĩa thực tiễn:** Kỹ thuật này ép mạng nơ-ron YOLOv11-seg phải học được đặc trưng hình học bất đối xứng: "Trang bên trái thì mép bên phải của nó là gáy sách, và ngược lại". Kết quả là khi test thực tế, mô hình tự động "từ chối" không bao hàm phần gáy sách dính mực đen vào trong mặt nạ (mask) dự đoán.
 
----
+## 3. Các tính năng đầu ra yêu cầu (KPI Đầu Ra)
 
-## 5. Phạm Vi Đồ Án
+Hệ thống sau khi nâng cấp phải đáp ứng được các tiêu chuẩn hình ảnh "chuẩn Pro":
 
-### 5.1 Tổng thể
-
-- [x] **Plan đã chọn:** Plan B
-- [x] **Hardware:** Mac Studio M4 Max 48GB
-- [x] **Datasets:** SmartDoc2-Images (24,887 ảnh) + kaggle_real (620 ảnh) chuyên biệt; dùng Doc3D (90,372 ảnh) làm OOD test
-- [x] **Loại bỏ tiền huấn luyện trên DUTS-TR** (data đích đã đủ 25K ảnh chất lượng)
-- [x] **Loại bỏ sinh dữ liệu nhân tạo** (Sử dụng dữ liệu thực tế lớn từ SmartDoc và kaggle_real)
-- [x] **Nhóm nghiên cứu quyết định huấn luyện 5-7 ngày trên M4 Max** (Đã tối ưu chạy MPS cực nhanh, chỉ mất 13.5h cho U²-Netp)
-- [x] **Báo cáo bảo vệ được thực hiện độc lập** (Sử dụng công cụ hỗ trợ phân tích mã nguồn)
-
-### 5.2 Phạm vi file code 
-
-> **Trạng thái:** **Đã hoàn thành 100%** — Toàn bộ file code core đã được tạo lập, liên kết và chạy thử thành công trên Mac Studio M4 Max (đã lược bỏ phần tích hợp pipeline để tập trung hoàn toàn vào huấn luyện và đánh giá model).
-
-| Module | File | Vai trò |
-|--------|------|---------|
-| Foundation (3) | requirements + .gitignore + README | Cài đặt + cấu trúc |
-| U²-Net (11) | model + loss + dataset + aug + train + eval + infer + viz + 3 configs | Train U²-Netp lite |
-| YOLO (7) | prepare + train + eval + viz + demo + tta + export | Fine-tune YOLOv11n |
-| Benchmark (5) | 4 KPI scripts + aggregate | Đo KPI 4 chiều của các model |
-| Scripts (6) | download + 2 prepare + dummy + check_env + caffeinate | Hỗ trợ |
-| Notebooks (2) | u2net + yolo demo | Demo độc lập mô hình |
-| **TỔNG** | **34 file** | Tập trung phát triển mô hình |
-
-### 5.3 Tuỳ chọn kỹ thuật
-
-- [x] Loại bỏ thư viện `pydensecrf` — khó build trên macOS ARM
-- [x] Loại bỏ thư viện `coremltools` — chỉ tập trung xuất `.onnx` để sử dụng đa nền tảng
-- [x] Bỏ hoàn toàn Tesseract OCR — lược bỏ pipeline, chỉ tập trung build & evaluate mô hình
-- [x] Default batch_size = 16 (M4 Max 48GB đủ rộng)
-- [x] Tắt AMP mặc định (MPS AMP còn buggy PyTorch 2.x)
-- [x] U²-Netp lite 300 epoch, input 320 (Tối ưu xuống 80 epoch do hội tụ sớm)
-- [x] YOLOv11n 150 epoch, imgsz 640 (Đã hoàn thành huấn luyện trên MPS, vượt mọi KPI)
-
-### 5.4 Ablation tối thiểu cho báo cáo
-
-- [x] U²-Net: BCE-only vs +IoU vs +SSIM (Đã kiểm chứng combo loss BCE + IoU + SSIM cho kết quả vượt trội)
-- [x] YOLO: Fine-tune COCO vs from-scratch (Đã hoàn thành và so sánh)
-- [x] Per-dataset eval: SmartDoc / Doc3D (Đã kiểm thử và phân tích chi tiết)
-
-### 5.5 Lệnh chạy mẫu
-
-```bash
-# Setup
-source venv_ml2/bin/activate
-pip install -r ml2/requirements.txt
-python ml2/scripts/check_environment.py
-
-# Test code chạy được (dummy data)
-python ml2/scripts/build_dummy_data.py --n 100
-python ml2/u2net/train.py --config ml2/u2net/configs/mps_mini.yaml --dummy --epochs 1
-
-# Tải datasets thật
-python ml2/scripts/download_datasets.py --smartdoc --doc3d --subset
-
-# Prepare labels
-python ml2/scripts/prepare_smartdoc.py
-python ml2/scripts/prepare_doc3d.py
-
-# Train (chạy đêm với caffeinate)
-caffeinate -i python ml2/u2net/train.py --config ml2/u2net/configs/doc_lite_planB.yaml
-caffeinate -i python ml2/yolo_seg/train.py --epochs 150 --device mps
-
-# Benchmark
-python ml2/benchmark/aggregate_results.py
-```
+1. **Cutout (Pixel-level Mask):** Ảnh đầu ra không phải là hình chữ nhật chứa nền, mà là đối tượng trang giấy được cắt uốn lượn chính xác theo đường cong thực tế, nền xung quanh là nền trong suốt/trắng.
+2. **Smooth Contour:** Đường bao viền của trang giấy không được xuất hiện hiện tượng răng cưa ("gai gai" do aliasing của mạng phân giải thấp 160x160). Yêu cầu bắt buộc áp dụng Gaussian Blur kết hợp Thresholding.
+3. **Spine Exclusion:** Cắt sát mép nội dung văn bản, không bao hàm vùng đóng gáy của sách.
 
 ---
 
-## 6. Các Vấn Đề Kỹ Thuật Đã Giải Quyết
+## 4. Timeline & Tiến độ Thực tế (M4 Max 48GB)
 
-| # | Câu hỏi | Đáp án |
-|---|---------|--------|
-| Q1 | Deadline đồ án? | **1 tuần** (gấp — cần A+ cấp tốc) |
-| Q2 | Báo cáo nộp tiếng Việt hay Anh? | **Tiếng Việt** |
-| Q3 | Mục tiêu điểm? | **A+ xuất sắc** |
-| Q4 | M4 Max có thể chạy xuyên đêm 5-7 ngày liên tục không? | **Có** — train liên tục được |
-| Q5 | Có muốn script auto pause/resume train theo phiên? | **Không** — build tự động toàn diện trước |
-| Q6 | Có muốn CoreML export để demo iOS/macOS? | **Không** — tạm dùng PyTorch `.pt` thông thường |
-
-### Hệ quả cho code:
-- ⏱️ **Deadline 1 tuần + A+** → Phải build TẤT CẢ code skeleton **ngay**, không chia phase
-- 🇻🇳 **Tiếng Việt** → Comments + docstrings + báo cáo bằng tiếng Việt
-- 🔁 **Không pause/resume** → Training script đơn giản, dùng `caffeinate` chống sleep
-- 📦 **PyTorch .pt only** → Loại bỏ thư viện `coremltools` khỏi requirements, chỉ giữ `onnx` cho export tuỳ chọn
+| Giai đoạn | Trạng thái / Kết quả đạt được |
+|---|---|
+| **Pha 1: Train Baseline (U2Net vs YOLO)** | **Đã hoàn thành** (Train xong cả 2 mô hình) |
+| **Pha 2: Chuẩn bị Dữ liệu Gáy Sách** | **Đã hoàn thành** (Viết script map `left_page`/`right_page`) |
+| **Pha 2: Tuning YOLOv11** | **Đã hoàn thành** (Model: `yolo11n_seg_spine_exclusion_best.pt`) |
+| **Pha 2: Hậu xử lý (Smoothing + Cutout)** | **Đã hoàn thành** (`test_crop.py` mặc định dùng `--cutout` và `--smooth-kernel 15`) |
+| **Đánh giá & Benchmark** | **Đã hoàn thành** (Giải quyết triệt để lỗi "gai gai" và lẹm gáy) |
 
 ---
 
-## 7. Các Công Việc Đã Thực Hiện
-
-1. Hoàn tất huấn luyện cả U²-Netp và YOLOv11n-seg.
-2. Đánh giá và tổng hợp đầy đủ KPI cho cả 2 mô hình (vượt mọi chỉ tiêu).
-3. Lược bỏ hoàn toàn các phần liên quan đến Pipeline (Warping/E.nce/OCR) theo đúng định hướng mới nhất.
-4. Xóa bỏ các tài liệu/code rác không cần thiết để làm gọn dự án.
-
----
-
-*Kế hoạch tập trung Build & Train Mô hình đã hoàn tất xuất sắc.*
+*Bài toán hiện tại hoàn toàn tập trung vào việc áp dụng mô hình phân đoạn kết hợp hậu xử lý thuật toán để tạo ra công cụ scan tài liệu di động chuyên nghiệp.*

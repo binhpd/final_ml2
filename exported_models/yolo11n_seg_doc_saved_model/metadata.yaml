@@ -1,0 +1,23 @@
+description: Ultralytics YOLO11n-seg model trained on ml2/data/yolo_doc/doc.yaml
+author: Ultralytics
+date: '2026-06-07T01:33:08.862062'
+version: 8.4.56
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: segment
+batch: 1
+imgsz:
+- 640
+- 640
+names:
+  0: document
+args:
+  data: null
+  batch: 1
+  fraction: 1.0
+  half: false
+  int8: false
+  nms: false
+channels: 3
+end2end: false

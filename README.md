@@ -93,13 +93,58 @@ python3 "Pipeline With ML/main.py" <thư_mục_test> <số_thứ_tự> --dewarp-
 
 ---
 
-## 3. Tài liệu Báo cáo môn học (Học sâu & Tích hợp)
+## 3. Dự án Cắt Gáy Sách & Phân đoạn Tài liệu (ML2 Phase 2)
 
-Các tài liệu nghiên cứu, spec kỹ thuật và hướng dẫn huấn luyện được lưu trữ trong thư mục [docs_ml2/](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/):
+Thư mục: `ml2/`
+
+Đây là giải pháp hiện đại nhất của dự án, sử dụng mạng **U²-Net** và **YOLOv11-seg** được tuning (tái cấu trúc nhãn) để cắt chính xác trang tài liệu và loại bỏ gáy sách, đi kèm thuật toán hậu xử lý (Cutout & Gaussian Blur).
+
+### 🚀 Lệnh Khởi chạy Nhanh (Build & Test)
+
+**Bước 1: Setup Môi trường**
+```bash
+python3 -m venv venv_ml2
+source venv_ml2/bin/activate
+pip install -r ml2/requirements.txt
+```
+
+**Bước 2: Chạy Thử (Test) Tính năng Cắt Gáy Sách**
+Mặc định sử dụng Cutout và Gaussian Smoothing để làm mờ viền cắt, đảm bảo độ mịn tuyệt đối.
+```bash
+python ml2/yolo_seg/test_crop.py \
+    --weights exported_models/yolo11n_seg_spine_exclusion_best.pt \
+    --source path/to/your/test_images \
+    --cutout \
+    --smooth-kernel 15
+```
+
+**Bước 3: Tải và xử lý dataset thật (Nếu muốn Train lại)**
+```bash
+python ml2/yolo_seg/split_and_process_dataset.py \
+    --input_dir datasets/your_raw_dataset \
+    --output_dir datasets/spine_dataset \
+    --split_ratio 0.8
+```
+
+**Bước 4: Huấn luyện (Train/Tuning) YOLOv11-seg**
+```bash
+yolo task=segment mode=train data=datasets/spine_dataset/data.yaml model=yolo11n-seg.pt \
+    epochs=150 batch=16 imgsz=640 device=mps \
+    optimizer=AdamW lr0=0.001 lrf=0.01 warmup_epochs=3 \
+    mosaic=1.0 mixup=0.1 box=7.5 cls=0.5 \
+    project=runs/spine_seg name=spine_exclusion_tuned
+```
+
+---
+
+## 4. Tài liệu Báo cáo môn học (Học sâu & Tích hợp)
+
+Các tài liệu nghiên cứu chuyên sâu (phục vụ bảo vệ đồ án), spec kỹ thuật và báo cáo huấn luyện được lưu trữ trong thư mục [docs_ml2/](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/):
 
 - [README.md - Master Index](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/README.md)
-- [01_KeHoach.md - Kế hoạch triển khai & Checklist](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/01_KeHoach.md)
-- [02_Spec_KyThuat.md - Kiến trúc mô hình, Loss & Spec code](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/02_Spec_KyThuat.md)
-- [03_Research_Note.md - Tóm tắt lý thuyết nền tảng](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/03_Research_Note.md)
-- [04_Other_Models_Research.md - Nghiên cứu các mô hình SOTA thay thế](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/04_Other_Models_Research.md)
-- [05_HuongDan_Build_Train_YOLO_U2Net.md - Hướng dẫn chi tiết cách build, train & KPIs đánh giá](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/05_HuongDan_Build_Train_YOLO_U2Net.md)
+- [01_Problem_Statement.md - Phát biểu bài toán 2 giai đoạn & Chiến lược Data](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/01_Problem_Statement.md)
+- [02_Research_Review.md - Phân tích kiến trúc U2Net vs YOLOv11](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/02_Research_Review.md)
+- [03_Project_Plan.md - Kế hoạch triển khai & Quản lý rủi ro](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/03_Project_Plan.md)
+- [04_Technical_Spec_and_KPI.md - Thông số kỹ thuật & Cấu hình Hàm Loss](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/04_Technical_Spec_and_KPI.md)
+- [05_Training_Guide.md - Nhật ký Huấn luyện & Hyperparameter Tuning](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/05_Training_Guide.md)
+- [06_Evaluation_Results.md - Đánh giá mIoU, viền răng cưa & Edge Cases](file:///Users/ntcnstudio01/Documents/binhpd2/Final/final_ml2/docs_ml2/06_Evaluation_Results.md)
