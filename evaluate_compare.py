@@ -70,8 +70,10 @@ def main():
     if os.path.exists(args.u2net_full_ckpt):
         try:
             print("🚀 Đang tải mô hình U2Net Full...")
-            u2net_full_model = U2NetDetector(ckpt=args.u2net_full_ckpt, device=args.device, is_lite=False)
-            _ = u2net_full_model.detect(np.zeros((640, 640, 3), dtype=np.uint8))
+            from u2net_official import load_official, infer_official
+            dev = torch.device(args.device if (args.device != "mps" or torch.backends.mps.is_available()) else "cpu")
+            u2net_full_model = load_official(args.u2net_full_ckpt, dev)
+            _ = infer_official(u2net_full_model, np.zeros((640, 640, 3), dtype=np.uint8), dev, size=320)
             print("✅ Đã tải thành công U2Net Full.")
         except Exception as e:
             print(f"⚠️ Không thể tải U2Net Full (có thể do lỗi trọng số): {e}")
@@ -115,7 +117,9 @@ def main():
         u2net_full_doc = np.zeros_like(img_bgr)
         if u2net_full_model is not None:
             t_start = time.perf_counter()
-            u2net_full_mask_img = u2net_full_model.detect(img_bgr)
+            dev = torch.device(args.device if (args.device != "mps" or torch.backends.mps.is_available()) else "cpu")
+            pred_full = infer_official(u2net_full_model, img_bgr, dev, size=320)
+            u2net_full_mask_img = (pred_full * 255).astype(np.uint8)
             u2net_full_time = (time.perf_counter() - t_start) * 1000
             u2net_full_doc = blend_with_white_bg(img_bgr, u2net_full_mask_img)
             print(f"✅ U2Net Full hoàn thành trong: {u2net_full_time:.2f} ms")
