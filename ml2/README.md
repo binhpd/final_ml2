@@ -36,26 +36,23 @@ python ml2/scripts/check_environment.py
 # 3. Chạy Thử (Test) Tính năng Cắt Gáy Sách (Spine Exclusion)
 # Mặc định sử dụng Cutout và Gaussian Smoothing để làm mờ viền cắt
 python ml2/yolo_seg/test_crop.py \
-    --weights exported_models/yolo11n_seg_spine_exclusion_best.pt \
+    --weights exported_models/yolo_tuning_v2.pt \
     --source path/to/your/test_images \
     --cutout \
     --smooth-kernel 15
 
-# 4. Tải và Xử lý dataset thật (Giai đoạn 2: Tách nhãn trái/phải để train)
-python ml2/yolo_seg/split_and_process_dataset.py \
-    --input_dir datasets/your_raw_dataset \
-    --output_dir datasets/spine_dataset \
-    --split_ratio 0.8
+# 4. Chuẩn bị dữ liệu (Data Blending 1-Class cho Tuning V2)
+python ml2/scripts/prepare_tuning_v2_fast.py
 
-# 5. Huấn luyện (Train/Tuning) YOLOv11-seg
-yolo task=segment mode=train data=datasets/spine_dataset/data.yaml model=yolo11n-seg.pt epochs=150 device=mps
+# 5. Huấn luyện (Train/Tuning) YOLOv11-seg V2
+python ml2/yolo_seg/train_tuning_v2.py
 ```
 
 ## 📦 Exported Models
 Các mô hình đã được train và tuning hoàn chỉnh được lưu tại thư mục `exported_models/` ở thư mục gốc:
 - `u2netp_doc_final.pth`: Mô hình U²-Net lite (Giai đoạn 1).
 - `yolo11n_seg_doc.pt`: Mô hình YOLO-Seg cơ bản (Giai đoạn 1).
-- `yolo11n_seg_spine_exclusion_best.pt`: Mô hình YOLO-Seg đã tuning cho bài toán cắt gáy sách (Giai đoạn 2).
+- `yolo_tuning_v2.pt`: Mô hình YOLO-Seg V2 đã tuning (Data Blending 1-Class) để loại bỏ gáy sách và chống quên dữ liệu phẳng (Giai đoạn 2).
 
 ## 📊 Tham khảo Tài liệu (docs_ml2)
 Chi tiết về toàn bộ quá trình nghiên cứu, chuẩn bị dữ liệu, đào tạo và đánh giá KPI, vui lòng xem tại thư mục `docs_ml2/`:

@@ -11,19 +11,16 @@ Tài liệu này hướng dẫn cách chạy hệ thống phân đoạn tài li�
 
 ---
 
-## 2. Chuẩn bị Dữ liệu (Spine Exclusion Relabeling)
+## 2. Chuẩn bị Dữ liệu (Data Blending V2)
 
-Để mô hình có thể cắt bỏ gáy sách, chúng ta cần gán lại nhãn dữ liệu gốc (từ 1 class "document" chung chung thành 2 class "left_page" và "right_page").
+Để mô hình loại bỏ được gáy sách nhưng **không bị quên** trang giấy phẳng (khắc phục Catastrophic Forgetting), chúng ta sử dụng chiến lược **Data Blending 1-Class**. Thay vì ép mô hình học nhãn Trái/Phải phức tạp, chúng ta sẽ gộp chung ảnh sách cong và ảnh tài liệu phẳng, gán chung 1 nhãn là `0: page`.
 
-Chạy script phân loại nhãn:
+Chạy script tạo tập dữ liệu trộn:
 ```bash
-python ml2/yolo_seg/split_and_process_dataset.py \
-    --input_dir datasets/your_raw_dataset \
-    --output_dir datasets/spine_dataset \
-    --split_ratio 0.8
+python ml2/scripts/prepare_tuning_v2_fast.py
 ```
 
-*Lưu ý:* Script này sẽ đọc tọa độ polygon của tài liệu gốc, tính toán trung tâm ảo và phân chia các đối tượng sang trái/phải, sau đó xuất ra định dạng tương thích YOLO (TXT).
+*Lưu ý:* Script này sẽ tự động lấy các ảnh cong từ `datasets/spine_dataset` và chọn ngẫu nhiên 4000 ảnh từ `datasets/smartdoc_kaggle_merged` để trộn vào `datasets/tuning_v2_fast`, sinh ra cấu trúc thư mục YOLO chuẩn với file `dataset.yaml` chứa đúng 1 class.
 
 ---
 
@@ -32,39 +29,24 @@ python ml2/yolo_seg/split_and_process_dataset.py \
 Sử dụng tập dữ liệu vừa được tạo ra ở bước 2 để huấn luyện.
 
 ### 3.1. Lệnh Huấn luyện Cơ bản
+Chúng ta sẽ huấn luyện từ pretrain của COCO để đảm bảo không bị bias bởi dữ liệu tài liệu trước đó.
+
 ```bash
-yolo task=segment mode=train \
-    data=datasets/spine_dataset/data.yaml \
-    model=yolo11n-seg.pt \
-    epochs=150 \
-    batch=16 \
-    imgsz=640 \
-    device=mps \
-    project=runs/spine_seg \
-    name=spine_exclusion_run
+python ml2/yolo_seg/train_tuning_v2.py
 ```
 
 ### 3.2. Chiến lược Tối ưu và Hiệu chỉnh Siêu tham số (Hyperparameter Tuning)
-Để giúp mô hình hội tụ nhanh hơn và đạt độ chính xác (mIoU) tối ưu nhất trong bài toán loại bỏ gáy sách, nhóm đã áp dụng các siêu tham số sau vào quá trình huấn luyện:
+Bên trong script `train_tuning_v2.py`, chúng tôi đã định cấu hình cứng các siêu tham số sau:
 
-- **Optimizer:** Sử dụng `optimizer='AdamW'` (thay vì SGD mặc định) để hội tụ nhanh hơn và tránh kẹt ở local minima đối với dataset có kích thước vừa.
-- **Learning Rate Scheduler:** Cấu hình `lr0=0.001`, `lrf=0.01` kết hợp với `warmup_epochs=3` để tránh bùng nổ gradient ở những epoch đầu.
-- **Data Augmentation:**
-  - Tăng cường `mosaic=1.0` giúp mô hình học được bối cảnh đa dạng và các góc cạnh khác nhau của trang giấy.
-  - Sử dụng `mixup=0.1` để tránh overfitting trên các nhiễu nền phức tạp.
-- **Loss Weights:** Tăng trọng số hàm loss của hộp giới hạn (`box=7.5`) và phân loại (`cls=0.5`) nhằm ép mô hình bắt chặt viền sách hơn.
+- **Epochs & Batch:** `epochs=30` (đủ để hội tụ với bộ dữ liệu sub-sample), `batch=32` (tận dụng băng thông của Mac Studio M4 Max).
+- **Optimizer:** Sử dụng `optimizer='AdamW'` để hội tụ nhanh hơn.
+- **Learning Rate Scheduler:** `lr0=0.001`, `lrf=0.01` với `warmup_epochs=3.0`.
+- **Data Augmentation:** Tăng cường `mosaic=1.0` và `mixup=0.15` giúp mô hình làm quen với bối cảnh phức tạp và nhiễu viền.
+- **Loss Weights:** `box=7.5` và `cls=0.5` để bắt chặt viền.
+- **Tập Dataset:** Tự động gọi file `datasets/tuning_v2_fast/dataset.yaml` vừa tạo ở bước 2.
 
-**Lệnh chạy với siêu tham số (Tuned Command):**
-```bash
-yolo task=segment mode=train data=datasets/spine_dataset/data.yaml model=yolo11n-seg.pt \
-    epochs=150 batch=16 imgsz=640 device=mps \
-    optimizer=AdamW lr0=0.001 lrf=0.01 warmup_epochs=3 \
-    mosaic=1.0 mixup=0.1 box=7.5 cls=0.5 \
-    project=runs/spine_seg name=spine_exclusion_tuned
-```
-
-Sau khi train xong, trọng số tốt nhất sẽ nằm tại `runs/spine_seg/spine_exclusion_tuned/weights/best.pt`.
-> **Mẹo quản lý:** Hãy copy file `best.pt` này vào thư mục `exported_models/yolo11n_seg_spine_exclusion_best.pt` để dễ quản lý.
+Sau khi train xong, trọng số tốt nhất sẽ nằm tại thư mục `runs/segment/tuning_v2_fast/weights/best.pt`.
+> **Mẹo quản lý:** File trọng số này đã được đổi tên và chép sẵn vào `exported_models/yolo_tuning_v2.pt` để dùng chung.
 
 ### 3.3. Nhật ký Huấn luyện (Training Log & Behavior)
 Việc theo dõi quá trình huấn luyện là cực kỳ quan trọng để đánh giá độ "khỏe mạnh" của mô hình:
@@ -82,7 +64,7 @@ Quá trình Inference không chỉ đơn thuần là dùng thư viện Ultralyti
 ### Lệnh chạy mặc định (Khuyên dùng)
 ```bash
 python ml2/yolo_seg/test_crop.py \
-    --weights exported_models/yolo11n_seg_spine_exclusion_best.pt \
+    --weights exported_models/yolo_tuning_v2.pt \
     --source path/to/test/images \
     --cutout \
     --smooth-kernel 15

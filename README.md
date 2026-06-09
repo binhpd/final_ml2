@@ -28,7 +28,7 @@ Sử dụng script `test_crop.py` kết hợp với model đã train tối ưu n
 Lệnh cắt ảnh tiêu chuẩn (sử dụng Cutout & Gaussian Smoothing để viền siêu mượt):
 ```bash
 python ml2/yolo_seg/test_crop.py \
-    --weights exported_models/yolo11n_seg_spine_exclusion_best.pt \
+    --weights exported_models/yolo_tuning_v2.pt \
     --source path/to/your/test_images \
     --cutout \
     --smooth-kernel 15
@@ -41,18 +41,11 @@ python ml2/yolo_seg/test_crop.py \
 Nếu bạn muốn tự train lại model từ đầu trên dữ liệu của riêng mình:
 
 ```bash
-# 1. Chuẩn bị dữ liệu (Tách nhãn trái/phải)
-python ml2/yolo_seg/split_and_process_dataset.py \
-    --input_dir datasets/your_raw_dataset \
-    --output_dir datasets/spine_dataset \
-    --split_ratio 0.8
+# 1. Chuẩn bị dữ liệu (Data Blending V2: Trộn phẳng và cong 1-Class)
+python ml2/scripts/prepare_tuning_v2_fast.py
 
 # 2. Train model bằng YOLOv11-seg
-yolo task=segment mode=train data=datasets/spine_dataset/data.yaml model=yolo11n-seg.pt \
-    epochs=150 batch=16 imgsz=640 device=mps \
-    optimizer=AdamW lr0=0.001 lrf=0.01 warmup_epochs=3 \
-    mosaic=1.0 mixup=0.1 box=7.5 cls=0.5 \
-    project=runs/spine_seg name=spine_exclusion_tuned
+python ml2/yolo_seg/train_tuning_v2.py
 ```
 
 ---

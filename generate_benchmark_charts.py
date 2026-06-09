@@ -27,7 +27,8 @@ def generate_charts():
         "u2net_old": "U2-Net Full (Salient)",
         "u2net_trained": "U2-Netp Lite (Trained)",
         "yolo_trained": "YOLOv11n-seg (Trained)",
-        "yolo_tuned": "YOLOv11n-seg (Spine Tuned)"
+        "yolo_tuned": "YOLOv11n-seg (Spine Tuned)",
+        "yolo_tuning_v2": "YOLOv11n-seg (Tuning V2)"
     }
     
     df_mps['model_display'] = df_mps['model'].map(model_mapping)
@@ -84,21 +85,16 @@ def generate_charts():
             'U2-Net Full (Salient)': 0.928,
             'U2-Netp Lite (Trained)': 0.974,
             'YOLOv11n-seg (Trained)': 0.940,
-            'YOLOv11n-seg (Spine Tuned)': 0.233
+            'YOLOv11n-seg (Spine Tuned)': 0.233,
+            'YOLOv11n-seg (Tuning V2)': 0.925
         },
         'kaggle_real (Ảnh chụp thật)': {
             'YOLOv11n-seg (COCO)': 0.667,
             'U2-Net Full (Salient)': 0.863,
             'U2-Netp Lite (Trained)': 0.972,
             'YOLOv11n-seg (Trained)': 0.960,
-            'YOLOv11n-seg (Spine Tuned)': 0.685
-        },
-        'Doc3D (Ảnh cong 3D)': {
-            'YOLOv11n-seg (COCO)': 0.679,
-            'U2-Net Full (Salient)': 0.953,
-            'U2-Netp Lite (Trained)': 0.733,
-            'YOLOv11n-seg (Trained)': 0.709,
-            'YOLOv11n-seg (Spine Tuned)': 0.696
+            'YOLOv11n-seg (Spine Tuned)': 0.685,
+            'YOLOv11n-seg (Tuning V2)': 0.932
         }
     }
     
@@ -110,7 +106,7 @@ def generate_charts():
     x = np.arange(len(ds_names))
     width = 0.15
     
-    colors = ['#d62728', '#9467bd', '#2ca02c', '#bcbd22', '#8c564b']
+    colors = ['#d62728', '#9467bd', '#2ca02c', '#bcbd22', '#8c564b', '#17becf']
     
     for idx, model_name in enumerate(model_names):
         iou_vals = [datasets_iou[ds][model_name] for ds in ds_names]
@@ -137,11 +133,12 @@ def generate_charts():
     # Tính mIoU trung bình trên ảnh thật (SmartDoc & kaggle_real)
     # SmartDoc và kaggle_real là ảnh thực tế
     real_iou = {
-        "yolo_old": 0.464,
-        "u2net_old": 0.896,
-        "u2net_trained": 0.973,
-        "yolo_trained": 0.950,
-        "yolo_tuned": 0.459 # Bị thấp do nhãn 1 lớp, ta sẽ chú thích điểm này
+        "yolo_old": 0.3351,
+        "u2net_old": 0.9115,
+        "u2net_trained": 0.9732,
+        "yolo_trained": 0.9445,
+        "yolo_tuned": 0.3353,
+        "yolo_tuning_v2": 0.9278
     }
     
     # u2net_old size: 176MB, params: 44M

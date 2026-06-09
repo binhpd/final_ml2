@@ -155,8 +155,6 @@ def main():
     if not args.no_save:
         out_dir.mkdir(parents=True, exist_ok=True)
         
-    class_names = {0: "left_page", 1: "right_page"}
-    
     for single_img_path in image_files:
         print(f"\nProcessing image: {single_img_path.name}")
         # Read image
@@ -182,16 +180,44 @@ def main():
             
         print(f"Detected {len(result.masks)} segmentations.")
         
-        # Process each mask
+        # Sort masks by X centroid if there are multiple masks (e.g. 2 pages)
+        mask_data_list = []
         for idx, (mask_obj, box_obj) in enumerate(zip(result.masks, result.boxes)):
-            cls_id = int(box_obj.cls[0].item())
-            cls_name = class_names.get(cls_id, f"class_{cls_id}")
             conf = box_obj.conf[0].item()
-            
-            # Get binary mask
-            mask = mask_obj.data[0].cpu().numpy()
-            mask_resized = cv2.resize(mask, (w, h))
+            mask_arr = mask_obj.data[0].cpu().numpy()
+            mask_resized = cv2.resize(mask_arr, (w, h))
             binary_mask = (mask_resized > 0.5).astype(np.uint8) * 255
+            
+            # Compute centroid X
+            M = cv2.moments(binary_mask)
+            if M["m00"] != 0:
+                cX = int(M["m10"] / M["m00"])
+            else:
+                cX = 0
+            
+            mask_data_list.append({
+                'binary_mask': binary_mask,
+                'conf': conf,
+                'cX': cX,
+                'idx': idx
+            })
+            
+        # Sort by X coordinate (Left to Right)
+        mask_data_list.sort(key=lambda x: x['cX'])
+        
+        # Assign logical names based on sorting
+        for i, m_data in enumerate(mask_data_list):
+            binary_mask = m_data['binary_mask']
+            conf = m_data['conf']
+            
+            # Dynamic naming
+            if len(mask_data_list) == 2:
+                logical_name = "left_page" if i == 0 else "right_page"
+            elif len(mask_data_list) == 1:
+                logical_name = "page"
+            else:
+                logical_name = f"page_part{i+1}"
+            
             
             # Smooth jagged mask edges using Gaussian Blur and Re-thresholding
             if args.smooth_kernel > 0:
@@ -205,7 +231,7 @@ def main():
                 binary_mask = cv2.erode(binary_mask, kernel, iterations=args.erode_iter)
             
             if use_cutout:
-                print(f" -> Creating pixel-level cutout for class '{cls_name}' (conf: {conf:.2f})...")
+                print(f" -> Creating pixel-level cutout for '{logical_name}' (conf: {conf:.2f})...")
                 cutout_img = blend_with_white_bg(img, binary_mask)
                 
                 # Crop tightly to the bounding box of the mask
@@ -225,26 +251,26 @@ def main():
                     display_w = 800
                     display_h = int(h_b * (800 / w_b)) if w_b > 0 else 800
                     cutout_small = cv2.resize(cutout_img, (display_w, display_h))
-                    cv2.imshow(f"Pixel Cutout - {cls_name}", cutout_small)
+                    cv2.imshow(f"Pixel Cutout - {logical_name}", cutout_small)
                     
                     if contours:
                         display_h_orig = int(h * (800 / w))
                         contour_small = cv2.resize(img_contour, (display_w, display_h_orig))
-                        cv2.imshow(f"Detailed Contour - {cls_name}", contour_small)
+                        cv2.imshow(f"Detailed Contour - {logical_name}", contour_small)
                         
                     print("Press any key on image window to continue...")
                     cv2.waitKey(0)
                     cv2.destroyAllWindows()
                     
                 if not args.no_save:
-                    out_name = f"cutout_{cls_name}_idx{idx+1}_{single_img_path.stem}.jpg"
+                    out_name = f"cutout_{logical_name}_{single_img_path.stem}.jpg"
                     cv2.imwrite(str(out_dir / out_name), cutout_img)
                     print(f"[SAVED] Pixel cutout saved to: {out_dir / out_name}")
                     
                     if contours:
                         # Crop the detailed contour visualization to the same bounding box
                         img_contour_cropped = img_contour[y_b:y_b+h_b, x_b:x_b+w_b]
-                        out_contour_name = f"visualized_cutout_{cls_name}_idx{idx+1}_{single_img_path.stem}.jpg"
+                        out_contour_name = f"visualized_cutout_{logical_name}_{single_img_path.stem}.jpg"
                         cv2.imwrite(str(out_dir / out_contour_name), img_contour_cropped)
                         print(f"[SAVED] Detailed contour saved to: {out_dir / out_contour_name}")
                 continue
@@ -263,7 +289,7 @@ def main():
                 if args.shrink_factor > 0.0:
                     corners = shrink_corners(corners, args.shrink_factor)
                 
-                print(f" -> Found page class '{cls_name}' (conf: {conf:.2f}), warping...")
+                print(f" -> Found page '{logical_name}' (conf: {conf:.2f}), warping...")
                 warped = crop_page(img, corners)
                 
                 # Draw corners on input image for visualization
@@ -277,14 +303,14 @@ def main():
                     display_w = 800
                     display_h = int(h * (800 / w))
                     img_vis_small = cv2.resize(img_vis, (display_w, display_h))
-                    cv2.imshow(f"Visualized Corners - {cls_name}", img_vis_small)
+                    cv2.imshow(f"Visualized Corners - {logical_name}", img_vis_small)
                     
                     # Warped image display
                     warped_h, warped_w = warped.shape[:2]
                     display_warped_w = 600
                     display_warped_h = int(warped_h * (600 / warped_w))
                     warped_small = cv2.resize(warped, (display_warped_w, display_warped_h))
-                    cv2.imshow(f"Warped Page - {cls_name}", warped_small)
+                    cv2.imshow(f"Warped Page - {logical_name}", warped_small)
                     
                     print("Press any key on image window to continue...")
                     cv2.waitKey(0)
@@ -292,12 +318,12 @@ def main():
                 
                 if not args.no_save:
                     # Save cropped output
-                    out_name = f"cropped_{cls_name}_idx{idx+1}_{single_img_path.stem}.jpg"
+                    out_name = f"cropped_{logical_name}_{single_img_path.stem}.jpg"
                     cv2.imwrite(str(out_dir / out_name), warped)
                     print(f"[SAVED] Cropped output saved to: {out_dir / out_name}")
-                    cv2.imwrite(str(out_dir / f"visualized_{cls_name}_idx{idx+1}_{single_img_path.name}"), img_vis)
+                    cv2.imwrite(str(out_dir / f"visualized_{logical_name}_{single_img_path.name}"), img_vis)
             else:
-                print(f"[WARNING] Could not approximate 4 corners for detected '{cls_name}'")
+                print(f"[WARNING] Could not approximate 4 corners for detected '{logical_name}'")
 
 if __name__ == "__main__":
     main()

@@ -26,6 +26,7 @@ MODELS = [
     ("u2net_trained", "u2net",     "exported_models/u2netp_doc_final.pth"),
     ("yolo_trained",  "yolo",     "exported_models/yolo11n_seg_doc.pt"),
     ("yolo_tuned",    "yolo",     "exported_models/yolo11n_seg_spine_exclusion_best.pt"),
+    ("yolo_tuning_v2","yolo",     "exported_models/yolo_tuning_v2.pt"),
 ]
 
 
