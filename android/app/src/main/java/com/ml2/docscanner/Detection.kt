@@ -15,7 +15,9 @@ data class Detection(
     val label: String,
     val score: Float,
     val box: RectF,
-    val mask: Bitmap?
+    val mask: Bitmap?,
+    /** 4 góc xấp xỉ (TL,TR,BR,BL) ở toạ độ CHUẨN HOÁ 0..1 theo ảnh; null nếu không tính được. */
+    val corners: FloatArray? = null
 )
 
 /**

@@ -36,7 +36,7 @@ python ml2/scripts/check_environment.py
 # 3. Chạy Thử (Test) Tính năng Cắt Gáy Sách (Spine Exclusion)
 # Mặc định sử dụng Cutout và Gaussian Smoothing để làm mờ viền cắt
 python ml2/yolo_seg/test_crop.py \
-    --weights exported_models/yolo_tuning_v2.pt \
+    --weights exported_models/yolo_tuning_v2_full.pt \
     --source path/to/your/test_images \
     --cutout \
     --smooth-kernel 15
@@ -52,7 +52,7 @@ python ml2/yolo_seg/train_tuning_v2.py
 Các mô hình đã được train và tuning hoàn chỉnh được lưu tại thư mục `exported_models/` ở thư mục gốc:
 - `u2netp_doc_final.pth`: Mô hình U²-Net lite (Giai đoạn 1).
 - `yolo11n_seg_doc.pt`: Mô hình YOLO-Seg cơ bản (Giai đoạn 1).
-- `yolo_tuning_v2.pt`: Mô hình YOLO-Seg V2 đã tuning (Data Blending 1-Class) để loại bỏ gáy sách và chống quên dữ liệu phẳng (Giai đoạn 2).
+- `yolo_tuning_v2_full.pt`: Mô hình YOLO-Seg V2 đã tuning (Data Blending 1-Class) trên toàn bộ dữ liệu (Full Dataset) để loại bỏ gáy sách và chống quên dữ liệu phẳng (Giai đoạn 2).
 
 ## 📊 Tham khảo Tài liệu (docs_ml2)
 Chi tiết về toàn bộ quá trình nghiên cứu, chuẩn bị dữ liệu, đào tạo và đánh giá KPI, vui lòng xem tại thư mục `docs_ml2/`:

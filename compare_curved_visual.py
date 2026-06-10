@@ -32,7 +32,7 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     
     model_trained = YOLO("exported_models/yolo11n_seg_doc.pt")
-    model_v2 = YOLO("exported_models/yolo_tuning_v2.pt")
+    model_v2 = YOLO("exported_models/yolo_tuning_v2_full.pt")
     
     img_paths = sorted(img_dir.glob("*.jpg"))
     

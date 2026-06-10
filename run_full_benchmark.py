@@ -121,7 +121,7 @@ def benchmark_spine_exclusion(device="mps"):
     
     models_to_test = [
         ("yolo_tuned", "exported_models/yolo11n_seg_spine_exclusion_best.pt", predict_yolo_multiclass),
-        ("yolo_tuning_v2", "exported_models/yolo_tuning_v2.pt", predict_yolo_v2_1class)
+        ("yolo_tuning_v2_full", "exported_models/yolo_tuning_v2_full.pt", predict_yolo_v2_1class)
     ]
     
     test_img_dir = Path("ml2/data/tunning/Yolo Segmentation/split/images/test")

@@ -117,7 +117,7 @@ class YoloSegModel(
         val kept = nms(candidates)
 
         val detections = kept.map { c ->
-            val mask = buildMask(c)
+            val mr = buildMask(c)
             // map box 640-letterbox -> ảnh gốc -> chuẩn hoá 0..1
             val bx1 = ((c.x1 - lb.padX) / lb.scale) / imgW
             val by1 = ((c.y1 - lb.padY) / lb.scale) / imgH
@@ -131,7 +131,8 @@ class YoloSegModel(
                     bx1.coerceIn(0f, 1f), by1.coerceIn(0f, 1f),
                     bx2.coerceIn(0f, 1f), by2.coerceIn(0f, 1f)
                 ),
-                mask = mask
+                mask = mr.bitmap,
+                corners = cornersToNorm(mr.corners160, lb, imgW, imgH)
             )
         }
         return InferenceResult(detections, lb, imgW, imgH, SystemClock.elapsedRealtime() - t0)
@@ -165,8 +166,15 @@ class YoloSegModel(
         return LetterboxInfo(scale, padX, padY)
     }
 
-    /** Tạo mask 160x160 ARGB cho 1 detection (chỉ tính trong vùng bbox). */
-    private fun buildMask(c: Cand): Bitmap {
+    /** Holder: mask bitmap + 4 góc xấp xỉ (160-space, order TL,TR,BR,BL) hoặc null. */
+    private class MaskOut(val bitmap: Bitmap, val corners160: FloatArray?)
+
+    /**
+     * Tạo mask 160x160 ARGB cho 1 detection (chỉ tính trong vùng bbox) và đồng thời
+     * tìm 4 góc cực trị của vùng foreground (đường bao xấp xỉ ngoài, bám phối cảnh):
+     *   TL = min(x+y), BR = max(x+y), TR = max(x-y), BL = min(x-y).
+     */
+    private fun buildMask(c: Cand): MaskOut {
         val proto = protoOut[0]
         val color = classColors[c.cls % classColors.size]
         val out = IntArray(protoSize * protoSize)
@@ -177,6 +185,13 @@ class YoloSegModel(
         val mx2 = (c.x2 / 4f).toInt().coerceIn(0, protoSize - 1)
         val my2 = (c.y2 / 4f).toInt().coerceIn(0, protoSize - 1)
         val coeffs = c.coeffs
+
+        var minSum = Float.MAX_VALUE; var maxSum = -Float.MAX_VALUE
+        var minDiff = Float.MAX_VALUE; var maxDiff = -Float.MAX_VALUE
+        var tlx = 0f; var tly = 0f; var brx = 0f; var bry = 0f
+        var trx = 0f; var tryy = 0f; var blx = 0f; var bly = 0f
+        var any = false
+
         for (y in my1..my2) {
             val row = proto[y]
             val base = y * protoSize
@@ -184,10 +199,32 @@ class YoloSegModel(
                 val pc = row[x]
                 var s = 0f
                 for (k in 0 until maskCoeffs) s += coeffs[k] * pc[k]
-                if (1f / (1f + exp(-s)) >= 0.5f) out[base + x] = color
+                if (1f / (1f + exp(-s)) >= 0.5f) {
+                    out[base + x] = color
+                    any = true
+                    val sum = (x + y).toFloat(); val diff = (x - y).toFloat()
+                    if (sum < minSum) { minSum = sum; tlx = x.toFloat(); tly = y.toFloat() }
+                    if (sum > maxSum) { maxSum = sum; brx = x.toFloat(); bry = y.toFloat() }
+                    if (diff > maxDiff) { maxDiff = diff; trx = x.toFloat(); tryy = y.toFloat() }
+                    if (diff < minDiff) { minDiff = diff; blx = x.toFloat(); bly = y.toFloat() }
+                }
             }
         }
-        return Bitmap.createBitmap(out, protoSize, protoSize, Bitmap.Config.ARGB_8888)
+        val corners = if (any) floatArrayOf(tlx, tly, trx, tryy, brx, bry, blx, bly) else null
+        return MaskOut(Bitmap.createBitmap(out, protoSize, protoSize, Bitmap.Config.ARGB_8888), corners)
+    }
+
+    /** Map 4 góc từ 160-space -> chuẩn hoá 0..1 theo ảnh gốc. */
+    private fun cornersToNorm(c160: FloatArray?, lb: LetterboxInfo, imgW: Int, imgH: Int): FloatArray? {
+        if (c160 == null) return null
+        val out = FloatArray(8)
+        for (i in 0 until 4) {
+            val px = c160[i * 2] * 4f       // 160 -> 640
+            val py = c160[i * 2 + 1] * 4f
+            out[i * 2] = (((px - lb.padX) / lb.scale) / imgW).coerceIn(0f, 1f)
+            out[i * 2 + 1] = (((py - lb.padY) / lb.scale) / imgH).coerceIn(0f, 1f)
+        }
+        return out
     }
 
     private fun nms(cands: ArrayList<Cand>): List<Cand> {

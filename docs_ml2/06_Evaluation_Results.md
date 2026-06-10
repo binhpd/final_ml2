@@ -33,7 +33,7 @@ Trước khi nâng cấp lên bài toán loại bỏ gáy sách, chúng tôi đ�
 
 ## 2. Giai Đoạn 2: Đánh Giá Bài Toán Loại Bỏ Gáy Sách (Tuning V2)
 
-Sau quá trình tinh chỉnh lần đầu bị lỗi Catastrophic Forgetting (quên giấy phẳng), chúng tôi đã áp dụng chiến lược **Data Blending 1-Class** để huấn luyện lại. Model mới nhất được lưu tại `exported_models/yolo_tuning_v2.pt`.
+Sau quá trình tinh chỉnh lần đầu bị lỗi Catastrophic Forgetting (quên giấy phẳng), chúng tôi đã áp dụng chiến lược **Data Blending 1-Class** để huấn luyện lại. Model mới nhất được lưu tại `exported_models/yolo_tuning_v2_full.pt`.
 
 ### 2.1 Kết quả nhận diện Đa Lớp (Spine Exclusion)
 Việc đánh giá gáy sách chủ yếu thông qua Visual Inspection trên các ảnh sách/tạp chí có 2 mặt.
@@ -42,7 +42,7 @@ Việc đánh giá gáy sách chủ yếu thông qua Visual Inspection trên cá
   - Mô hình nhận diện cả quyển sách thành 1 block hình chữ nhật lớn. Mask quét qua cả phần nền bàn ở phía trên và dưới gáy sách.
 - **Sau khi Tuning V2 (Spine Exclusion + Data Blending):** 
   - Mô hình tách biệt xuất sắc 2 mask riêng biệt: Mask 1 bám sát trang trái, Mask 2 bám sát trang phải, dù cả 2 đều chung nhãn `page`.
-  - Vùng đen ở giữa gáy sách (spine) bị bỏ qua hoàn toàn. Đồng thời mô hình vẫn nhận diện hoàn hảo các tờ giấy phẳng độc lập (IoU 92.78%).
+  - Vùng đen ở giữa gáy sách (spine) bị bỏ qua hoàn toàn. Đồng thời mô hình vẫn nhận diện hoàn hảo các tờ giấy phẳng độc lập (IoU 94.30%).
 
 #### 2.1.1 Phân tích các Góc khuất và Dữ liệu Nhiễu (Edge Cases Analysis)
 Để mô hình thực sự áp dụng được vào đời sống, hội đồng đánh giá đã kiểm tra các case khó nhất:
@@ -74,4 +74,4 @@ Nhờ áp dụng chiến lược điều chỉnh siêu tham số chuyên sâu tr
 
 Hệ thống đã chuyển mình thành công từ một bài toán nhận diện tài liệu cơ bản thành một **hệ thống scan di động mạnh mẽ**, có khả năng giải quyết các case khó nhất trong thực tế (sách có gáy). 
 
-Sự kết hợp giữa **Tuning Data (Data Blending V2)**, cấu trúc mạng hiện đại **YOLOv11**, và thuật toán **Post-processing CV (Gaussian Smoothing)** đã giúp nhóm hoàn thành đồ án với kết quả xuất sắc. Mô hình `yolo_tuning_v2` đã giải quyết triệt để lỗi Catastrophic Forgetting, trở thành "The Ultimate Winner" vượt trội hoàn toàn so với mục tiêu ban đầu.
+Sự kết hợp giữa **Tuning Data (Data Blending V2)**, cấu trúc mạng hiện đại **YOLOv11**, và thuật toán **Post-processing CV (Gaussian Smoothing)** đã giúp nhóm hoàn thành đồ án với kết quả xuất sắc. Mô hình `yolo_tuning_v2_full` đã giải quyết triệt để lỗi Catastrophic Forgetting, trở thành "The Ultimate Winner" vượt trội hoàn toàn so với mục tiêu ban đầu.

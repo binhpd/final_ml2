@@ -6,7 +6,7 @@
 
 ## Tính năng
 - **Camera live + overlay**: vẽ mask + khung (bbox kiểu scanner) của trang giấy theo thời gian thực.
-- **Chọn model**: nút `1 trang` (model `document`) ↔ `Sách (bỏ gáy)` (model `left_page/right_page`).
+- **Chọn model**: `Trang (V2)` — mặc định, model `yolo_tuning_v2` (class `page`, scan 1 trang, đã khắc phục catastrophic forgetting) ↔ `1 trang` (model `document`) ↔ `Sách (bỏ gáy)` (model `left_page/right_page`).
 - **Chụp & cắt nền**: dùng mask làm kênh alpha → xuất cutout nền trong suốt.
 - 100% on-device, không cần mạng. Inference TFLite + XNNPACK (CPU đa luồng).
 
@@ -15,6 +15,7 @@ Hai file `.tflite` (FP32, imgsz 640) export từ checkpoint gốc bằng Ultraly
 `app/src/main/assets/`:
 | Asset | Nguồn | Lớp |
 |---|---|---|
+| `yolo_page_v2.tflite` ⭐ | `exported_models/yolo_tuning_v2.pt` | `page` (mặc định) |
 | `yolo_doc.tflite` | `exported_models/yolo11n_seg_doc.pt` | `document` |
 | `yolo_spine.tflite` | `exported_models/yolo11n_seg_spine_exclusion_best.pt` | `left_page`, `right_page` |
 

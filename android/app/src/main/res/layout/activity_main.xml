@@ -38,6 +38,13 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPageV2"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Trang (V2)" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDoc"
             style="?attr/materialButtonOutlinedStyle"
             android:layout_width="wrap_content"
@@ -63,6 +70,19 @@
         android:textSize="12sp"
         android:text="--"
         app:layout_constraintTop_toBottomOf="@id/modelToggle"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/frameModeButton"
+        style="?attr/materialButtonOutlinedStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="48dp"
+        android:checkable="true"
+        android:text="Khung page"
+        android:textColor="#FFFFFF"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton

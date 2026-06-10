@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private var latestBitmap: Bitmap? = null
 
     private enum class ModelKind(val asset: String, val labels: List<String>) {
+        PAGE_V2("yolo_page_v2.tflite", listOf("page")),
         DOC("yolo_doc.tflite", listOf("document")),
         SPINE("yolo_spine.tflite", listOf("left_page", "right_page"))
     }
@@ -50,11 +51,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
-        binding.modelToggle.check(binding.btnDoc.id)
+        binding.modelToggle.check(binding.btnPageV2.id)
         binding.modelToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
-            val kind = if (checkedId == binding.btnSpine.id) ModelKind.SPINE else ModelKind.DOC
+            val kind = when (checkedId) {
+                binding.btnSpine.id -> ModelKind.SPINE
+                binding.btnDoc.id -> ModelKind.DOC
+                else -> ModelKind.PAGE_V2
+            }
             switchModel(kind)
+        }
+
+        binding.frameModeButton.addOnCheckedChangeListener { _, isChecked ->
+            binding.overlay.setFrameMode(isChecked)
         }
 
         binding.captureButton.setOnClickListener { capture() }
@@ -63,7 +72,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // nạp model mặc định
-        cameraExecutor.execute { loadModel(ModelKind.DOC) }
+        cameraExecutor.execute { loadModel(ModelKind.PAGE_V2) }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             == PackageManager.PERMISSION_GRANTED

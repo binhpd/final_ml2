@@ -28,7 +28,7 @@ Sử dụng script `test_crop.py` kết hợp với model đã train tối ưu n
 Lệnh cắt ảnh tiêu chuẩn (sử dụng Cutout & Gaussian Smoothing để viền siêu mượt):
 ```bash
 python ml2/yolo_seg/test_crop.py \
-    --weights exported_models/yolo_tuning_v2.pt \
+    --weights exported_models/yolo_tuning_v2_full.pt \
     --source path/to/your/test_images \
     --cutout \
     --smooth-kernel 15

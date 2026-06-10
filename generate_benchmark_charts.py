@@ -28,7 +28,7 @@ def generate_charts():
         "u2net_trained": "U2-Netp Lite (Trained)",
         "yolo_trained": "YOLOv11n-seg (Trained)",
         "yolo_tuned": "YOLOv11n-seg (Spine Tuned)",
-        "yolo_tuning_v2": "YOLOv11n-seg (Tuning V2)"
+        "yolo_tuning_v2_full": "YOLOv11n-seg (Tuning V2 Full)"
     }
     
     df_mps['model_display'] = df_mps['model'].map(model_mapping)
@@ -81,12 +81,12 @@ def generate_charts():
     # Bộ dữ liệu IoU lấy từ kết quả thực tế phân tách
     datasets_iou = {
         'SmartDoc (Ảnh phẳng thật)': {
-            'YOLOv11n-seg (COCO)': 0.261,
-            'U2-Net Full (Salient)': 0.928,
+            'YOLOv11n-seg (COCO)': 0.232,
+            'U2-Net Full (Salient)': 0.926,
             'U2-Netp Lite (Trained)': 0.974,
             'YOLOv11n-seg (Trained)': 0.940,
-            'YOLOv11n-seg (Spine Tuned)': 0.233,
-            'YOLOv11n-seg (Tuning V2)': 0.925
+            'YOLOv11n-seg (Spine Tuned)': 0.227,
+            'YOLOv11n-seg (Tuning V2 Full)': 0.939
         },
         'kaggle_real (Ảnh chụp thật)': {
             'YOLOv11n-seg (COCO)': 0.667,
@@ -94,7 +94,7 @@ def generate_charts():
             'U2-Netp Lite (Trained)': 0.972,
             'YOLOv11n-seg (Trained)': 0.960,
             'YOLOv11n-seg (Spine Tuned)': 0.685,
-            'YOLOv11n-seg (Tuning V2)': 0.932
+            'YOLOv11n-seg (Tuning V2 Full)': 0.956
         }
     }
     
@@ -138,7 +138,7 @@ def generate_charts():
         "u2net_trained": 0.9732,
         "yolo_trained": 0.9445,
         "yolo_tuned": 0.3353,
-        "yolo_tuning_v2": 0.9278
+        "yolo_tuning_v2_full": 0.9430
     }
     
     # u2net_old size: 176MB, params: 44M

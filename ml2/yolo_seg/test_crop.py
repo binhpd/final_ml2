@@ -167,9 +167,10 @@ def main():
             print(f"[WARNING] Could not read image: {single_img_path}")
             continue
         h, w = img.shape[:2]
-        
         # Run prediction
-        results = model.predict(img, imgsz=640, device="cpu") # Run on CPU for simple testing, or MPS
+        import torch
+        device = "mps" if torch.backends.mps.is_available() else "cpu"
+        results = model.predict(img, imgsz=640, device=device)
         result = results[0]
         
         if result.masks is None:
@@ -179,6 +180,10 @@ def main():
             continue
             
         print(f"Detected {len(result.masks)} segmentations.")
+        
+        # Create a single copy of the original image to draw all detections
+        img_visualization = img.copy()
+        has_any_detection = False
         
         # Sort masks by X centroid if there are multiple masks (e.g. 2 pages)
         mask_data_list = []
@@ -218,7 +223,6 @@ def main():
             else:
                 logical_name = f"page_part{i+1}"
             
-            
             # Smooth jagged mask edges using Gaussian Blur and Re-thresholding
             if args.smooth_kernel > 0:
                 ksize = args.smooth_kernel if args.smooth_kernel % 2 == 1 else args.smooth_kernel + 1
@@ -239,12 +243,21 @@ def main():
                 if w_b > 0 and h_b > 0:
                     cutout_img = cutout_img[y_b:y_b+h_b, x_b:x_b+w_b]
                 
-                # Draw detailed contour on a copy of the original image
+                # Draw detailed contour on the global visualization image
                 contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                img_contour = img.copy()
                 if contours:
                     largest_cnt = max(contours, key=cv2.contourArea)
-                    cv2.drawContours(img_contour, [largest_cnt], -1, (0, 255, 0), 3) # Green line
+                    cv2.drawContours(img_visualization, [largest_cnt], -1, (0, 255, 0), 3) # Green line
+                    # Write label on the visualization image
+                    M = cv2.moments(largest_cnt)
+                    if M["m00"] != 0:
+                        cX = int(M["m10"] / M["m00"])
+                        cY = int(M["m01"] / M["m00"])
+                    else:
+                        cX, cY = 100, 100
+                    cv2.putText(img_visualization, f"{logical_name} ({conf:.2f})", (cX - 50, cY),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
+                    has_any_detection = True
                 
                 if args.show:
                     # Resize window if cutout/contour is too large
@@ -252,12 +265,6 @@ def main():
                     display_h = int(h_b * (800 / w_b)) if w_b > 0 else 800
                     cutout_small = cv2.resize(cutout_img, (display_w, display_h))
                     cv2.imshow(f"Pixel Cutout - {logical_name}", cutout_small)
-                    
-                    if contours:
-                        display_h_orig = int(h * (800 / w))
-                        contour_small = cv2.resize(img_contour, (display_w, display_h_orig))
-                        cv2.imshow(f"Detailed Contour - {logical_name}", contour_small)
-                        
                     print("Press any key on image window to continue...")
                     cv2.waitKey(0)
                     cv2.destroyAllWindows()
@@ -266,13 +273,6 @@ def main():
                     out_name = f"cutout_{logical_name}_{single_img_path.stem}.jpg"
                     cv2.imwrite(str(out_dir / out_name), cutout_img)
                     print(f"[SAVED] Pixel cutout saved to: {out_dir / out_name}")
-                    
-                    if contours:
-                        # Crop the detailed contour visualization to the same bounding box
-                        img_contour_cropped = img_contour[y_b:y_b+h_b, x_b:x_b+w_b]
-                        out_contour_name = f"visualized_cutout_{logical_name}_{single_img_path.stem}.jpg"
-                        cv2.imwrite(str(out_dir / out_contour_name), img_contour_cropped)
-                        print(f"[SAVED] Detailed contour saved to: {out_dir / out_contour_name}")
                 continue
 
             # Find contours
@@ -292,17 +292,26 @@ def main():
                 print(f" -> Found page '{logical_name}' (conf: {conf:.2f}), warping...")
                 warped = crop_page(img, corners)
                 
-                # Draw corners on input image for visualization
-                img_vis = img.copy()
+                # Draw corners and polygon on global visualization image
                 for corner in corners:
-                    cv2.circle(img_vis, tuple(corner), 10, (0, 0, 255), -1)
-                cv2.polylines(img_vis, [corners], True, (0, 255, 0), 3)
+                    cv2.circle(img_visualization, tuple(corner), 10, (0, 0, 255), -1)
+                cv2.polylines(img_visualization, [corners], True, (0, 255, 0), 3)
+                
+                M = cv2.moments(largest_cnt)
+                if M["m00"] != 0:
+                    cX = int(M["m10"] / M["m00"])
+                    cY = int(M["m01"] / M["m00"])
+                else:
+                    cX, cY = 100, 100
+                cv2.putText(img_visualization, f"{logical_name} ({conf:.2f})", (cX - 50, cY),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2, cv2.LINE_AA)
+                has_any_detection = True
                 
                 if args.show:
                     # Resize windows if images are too large for screen
                     display_w = 800
                     display_h = int(h * (800 / w))
-                    img_vis_small = cv2.resize(img_vis, (display_w, display_h))
+                    img_vis_small = cv2.resize(img_visualization, (display_w, display_h))
                     cv2.imshow(f"Visualized Corners - {logical_name}", img_vis_small)
                     
                     # Warped image display
@@ -321,9 +330,14 @@ def main():
                     out_name = f"cropped_{logical_name}_{single_img_path.stem}.jpg"
                     cv2.imwrite(str(out_dir / out_name), warped)
                     print(f"[SAVED] Cropped output saved to: {out_dir / out_name}")
-                    cv2.imwrite(str(out_dir / f"visualized_{logical_name}_{single_img_path.name}"), img_vis)
             else:
                 print(f"[WARNING] Could not approximate 4 corners for detected '{logical_name}'")
+        
+        # After processing all segments for the image, save the single, unified visualization
+        if not args.no_save and has_any_detection:
+            out_vis_name = f"visualized_{single_img_path.name}"
+            cv2.imwrite(str(out_dir / out_vis_name), img_visualization)
+            print(f"[SAVED] Overall detection visualization saved to: {out_dir / out_vis_name}")
 
 if __name__ == "__main__":
     main()

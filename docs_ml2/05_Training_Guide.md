@@ -46,7 +46,7 @@ Bên trong script `train_tuning_v2.py`, chúng tôi đã định cấu hình c�
 - **Tập Dataset:** Tự động gọi file `datasets/tuning_v2_fast/dataset.yaml` vừa tạo ở bước 2.
 
 Sau khi train xong, trọng số tốt nhất sẽ nằm tại thư mục `runs/segment/tuning_v2_fast/weights/best.pt`.
-> **Mẹo quản lý:** File trọng số này đã được đổi tên và chép sẵn vào `exported_models/yolo_tuning_v2.pt` để dùng chung.
+> **Mẹo quản lý:** File trọng số này đã được đổi tên và chép sẵn vào `exported_models/yolo_tuning_v2_full.pt` để dùng chung.
 
 ### 3.3. Nhật ký Huấn luyện (Training Log & Behavior)
 Việc theo dõi quá trình huấn luyện là cực kỳ quan trọng để đánh giá độ "khỏe mạnh" của mô hình:
@@ -64,7 +64,7 @@ Quá trình Inference không chỉ đơn thuần là dùng thư viện Ultralyti
 ### Lệnh chạy mặc định (Khuyên dùng)
 ```bash
 python ml2/yolo_seg/test_crop.py \
-    --weights exported_models/yolo_tuning_v2.pt \
+    --weights exported_models/yolo_tuning_v2_full.pt \
     --source path/to/test/images \
     --cutout \
     --smooth-kernel 15
